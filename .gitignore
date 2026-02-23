@@ -1,0 +1,21 @@
+# Compiler output
+/out/
+/cache/
+
+# Environment
+.env
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Foundry
+/broadcast/
+
+# Temp
+*.bat
+*.ps1
