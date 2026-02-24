@@ -1,0 +1,52 @@
+name: Deploy Frontend to GitHub Pages
+
+on:
+  push:
+    branches: [claude/stoic-rosalind, master]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_WC_PROJECT_ID: demo
+          VITE_GAME_ENGINE: "0x778C219FD300Ad6d4e66DC455ef211369Fff36cd"
+          VITE_TREASURY: "0xdB60de292A5eE2DaA5653E20E2331D61EC083316"
+          VITE_SEASON_NFT: "0x6a8a9236f3aeF3c61D8b0A18Dc15B2AA5BE944Af"
+          VITE_USDC: "0xD13c657d82e00497dc4D2b0cEE971a6FCA47212b"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
