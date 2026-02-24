@@ -2,6 +2,10 @@
 pragma solidity ^0.8.24;
 
 interface ITreasury {
+    // ═══════════════════════════════════════════
+    //          GAME ENGINE → TREASURY
+    // ═══════════════════════════════════════════
+
     /// @notice Record a deployment and split the USDC across killPot, treasury, creators, buyback.
     /// @dev    GameEngine transfers USDC to Treasury before calling this.
     ///         70% → killPot[laneId][faction], 30% → treasury/creators/buyback.
@@ -58,12 +62,47 @@ interface ITreasury {
         uint256 totalSHIB
     ) external pure returns (uint256);
 
-    /// @notice Refund 80% of retreat cost to the player.
-    function refundRetreat(address player, uint256 amount) external;
+    /// @notice Refund retreat cost to the player (80% of costPaid).
+    /// @param player      The player receiving the refund.
+    /// @param totalRefund The total USDC amount to refund (costPaid × 80%).
+    /// @param laneId      Lane the squad was in (to debit killPot).
+    /// @param faction     Faction of the squad (to debit killPot).
+    /// @param costPaid    Original cost paid for the squad.
+    function refundRetreat(
+        address player,
+        uint256 totalRefund,
+        uint8 laneId,
+        uint8 faction,
+        uint256 costPaid
+    ) external;
 
     /// @notice Finalize the season treasury (stops hold score accrual).
-    function finalizeSeason(uint256 seasonId) external;
+    /// @param seasonId       The season being finalized.
+    /// @param totalHoldScore Sum of all hold scores across all bastions (PEPE + SHIB).
+    /// @param winnerFaction  The winning faction (1=PEPE, 2=SHIB).
+    function finalizeSeason(
+        uint256 seasonId,
+        uint256 totalHoldScore,
+        uint8 winnerFaction
+    ) external;
 
     /// @notice Player claims their share of the season treasury after it ends.
     function claim(uint256 seasonId) external;
+
+    // ═══════════════════════════════════════════
+    //            PLAYER FUNCTIONS
+    // ═══════════════════════════════════════════
+
+    /// @notice Withdraw all accumulated pending rewards (kill rewards, retreat refunds).
+    function withdraw() external;
+
+    // ═══════════════════════════════════════════
+    //            FUNDING
+    // ═══════════════════════════════════════════
+
+    /// @notice Seed the treasury for a season with initial USDC (founders).
+    function seedTreasury(uint256 seasonId, uint256 amount) external;
+
+    /// @notice Donate USDC to a season's treasury (community).
+    function donate(uint256 seasonId, uint256 amount) external;
 }

@@ -1,0 +1,14 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "name": "tokenId", "type": "uint256" },
+      { "indexed": true, "name": "seasonId", "type": "uint256" },
+      { "indexed": false, "name": "rank", "type": "uint8" },
+      { "indexed": false, "name": "faction", "type": "uint8" },
+      { "indexed": true, "name": "player", "type": "address" }
+    ],
+    "name": "SeasonNFTMinted",
+    "type": "event"
+  }
+]

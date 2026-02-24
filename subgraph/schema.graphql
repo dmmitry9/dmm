@@ -1,0 +1,142 @@
+# ═══════════════════════════════════════════
+#   PEPE vs SHIB — The Graph Schema
+# ═══════════════════════════════════════════
+
+# ── Core entities ─────────────────────────
+
+type Season @entity {
+  id: ID!                          # seasonId
+  seasonId: BigInt!
+  startTime: BigInt!
+  endTime: BigInt
+  active: Boolean!
+  winner: Int                      # 0=none, 1=PEPE, 2=SHIB
+  holdScorePEPE: BigInt!
+  holdScoreSHIB: BigInt!
+  treasuryBalance: BigInt!
+  totalDeployments: BigInt!
+  totalBattles: BigInt!
+  top3: [Bytes!]                   # winner addresses
+  squads: [Squad!]! @derivedFrom(field: "season")
+  battles: [Battle!]! @derivedFrom(field: "season")
+  players: [PlayerSeason!]! @derivedFrom(field: "season")
+  nfts: [SeasonNFTToken!]! @derivedFrom(field: "season")
+}
+
+type Squad @entity {
+  id: ID!                          # squadId
+  squadId: BigInt!
+  owner: Player!
+  laneId: Int!
+  unitType: Int!                   # 1=SWORDSMAN, 2=SPEARMAN, 3=CAVALRY
+  faction: Int!                    # 1=PEPE, 2=SHIB
+  active: Boolean!
+  deployedAt: BigInt!
+  bastionEnteredAt: BigInt
+  initialCount: BigInt!
+  costPaid: BigInt!
+  season: Season!
+  arrivedAt: BigInt                # block timestamp of arrival
+  retreatedAt: BigInt              # block timestamp of retreat
+  zombieCleanedAt: BigInt          # block timestamp of zombie cleanup
+}
+
+type Battle @entity {
+  id: ID!                          # txHash-logIndex
+  season: Season!
+  laneId: Int!
+  winner: Int!                     # 1=PEPE, 2=SHIB
+  totalSurvivors: BigInt!
+  winnerPot: BigInt!
+  loserEarned: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  txHash: Bytes!
+}
+
+type Player @entity {
+  id: ID!                          # address
+  address: Bytes!
+  totalUsdcSpent: BigInt!
+  totalKillRewards: BigInt!
+  totalWithdrawn: BigInt!
+  pendingRewards: BigInt!
+  squads: [Squad!]! @derivedFrom(field: "owner")
+  seasons: [PlayerSeason!]! @derivedFrom(field: "player")
+  nfts: [SeasonNFTToken!]! @derivedFrom(field: "player")
+}
+
+type PlayerSeason @entity {
+  id: ID!                          # address-seasonId
+  player: Player!
+  season: Season!
+  faction: Int!                    # 1=PEPE, 2=SHIB
+  usdcSpent: BigInt!
+  killRewardsEarned: BigInt!
+  seasonClaimed: BigInt!
+  squadsDeployed: BigInt!
+}
+
+# ── Lane state ────────────────────────────
+
+type Lane @entity {
+  id: ID!                          # laneId
+  laneId: Int!
+  holdScorePEPE: BigInt!
+  holdScoreSHIB: BigInt!
+  lastUpdated: BigInt!
+}
+
+# ── Weather & Events ──────────────────────
+
+type WeatherChange @entity {
+  id: ID!                          # txHash-logIndex
+  weather: Int!                    # 1=RAINY, 2=SUNNY, 3=FOGGY
+  timestamp: BigInt!
+  blockNumber: BigInt!
+}
+
+type SpecialEventChange @entity {
+  id: ID!                          # txHash-logIndex
+  eventType: Int!                  # 1=EPIDEMIC, 2=HARVEST, 3=ECLIPSE
+  endsAt: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+}
+
+# ── NFT ───────────────────────────────────
+
+type SeasonNFTToken @entity {
+  id: ID!                          # tokenId
+  tokenId: BigInt!
+  season: Season!
+  rank: Int!                       # 1, 2, 3
+  faction: Int!                    # 1=PEPE, 2=SHIB
+  player: Player!
+  mintedAt: BigInt!
+}
+
+# ── Treasury ──────────────────────────────
+
+type TreasuryState @entity {
+  id: ID!                          # "global"
+  creatorsWithdrawn: BigInt!
+  buybackWithdrawn: BigInt!
+  totalSeeded: BigInt!
+  totalDonated: BigInt!
+}
+
+# ── Activity feed (latest events) ────────
+
+type Activity @entity {
+  id: ID!                          # txHash-logIndex
+  type: String!                    # "deploy", "arrive", "battle", "retreat", "season_start", "season_end", "weather", "event", "claim", "nft_mint"
+  season: Season
+  player: Player
+  laneId: Int
+  faction: Int
+  details: String                  # JSON-encoded extra data
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  txHash: Bytes!
+}

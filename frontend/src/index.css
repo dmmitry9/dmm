@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-game-card border border-game-border rounded-xl p-4;
+  }
+  .btn {
+    @apply px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-pepe {
+    @apply btn bg-pepe hover:bg-pepe-light text-white;
+  }
+  .btn-shib {
+    @apply btn bg-shib hover:bg-shib-light text-white;
+  }
+  .btn-neutral {
+    @apply btn bg-gray-700 hover:bg-gray-600 text-white;
+  }
+}
+
+/* Segment animation */
+@keyframes march {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.marching {
+  animation: march 1.5s ease-in-out infinite;
+}
+
+/* Bastion pulse */
+@keyframes bastion-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(139, 92, 246, 0.4); }
+  50% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.8); }
+}
+.bastion-glow {
+  animation: bastion-pulse 2s ease-in-out infinite;
+}

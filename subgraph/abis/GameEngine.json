@@ -1,0 +1,103 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "name": "squadId", "type": "uint256" },
+      { "indexed": true, "name": "owner", "type": "address" },
+      { "indexed": false, "name": "faction", "type": "uint8" },
+      { "indexed": false, "name": "laneId", "type": "uint8" },
+      { "indexed": false, "name": "unitType", "type": "uint8" },
+      { "indexed": false, "name": "count", "type": "uint32" },
+      { "indexed": false, "name": "cost", "type": "uint256" }
+    ],
+    "name": "UnitsDeployed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "name": "squadId", "type": "uint256" },
+      { "indexed": false, "name": "laneId", "type": "uint8" }
+    ],
+    "name": "SquadArrived",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "name": "squadId", "type": "uint256" },
+      { "indexed": true, "name": "owner", "type": "address" },
+      { "indexed": false, "name": "refund", "type": "uint256" },
+      { "indexed": false, "name": "penalty", "type": "uint256" }
+    ],
+    "name": "Retreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "name": "laneId", "type": "uint8" },
+      { "indexed": false, "name": "winner", "type": "uint8" },
+      { "indexed": false, "name": "totalSurvivors", "type": "uint256" },
+      { "indexed": false, "name": "winnerPot", "type": "uint256" },
+      { "indexed": false, "name": "loserEarned", "type": "uint256" }
+    ],
+    "name": "BattleResolved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "name": "seasonId", "type": "uint256" },
+      { "indexed": false, "name": "startTime", "type": "uint256" }
+    ],
+    "name": "SeasonStarted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "name": "seasonId", "type": "uint256" },
+      { "indexed": false, "name": "winner", "type": "uint8" },
+      { "indexed": false, "name": "top3", "type": "address[3]" }
+    ],
+    "name": "SeasonEnded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": false, "name": "weather", "type": "uint8" }
+    ],
+    "name": "WeatherChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": false, "name": "evt", "type": "uint8" },
+      { "indexed": false, "name": "endsAt", "type": "uint256" }
+    ],
+    "name": "SpecialEventStarted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": false, "name": "laneId", "type": "uint8" },
+      { "indexed": false, "name": "scorePEPE", "type": "uint128" },
+      { "indexed": false, "name": "scoreSHIB", "type": "uint128" }
+    ],
+    "name": "HoldScoreUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "name": "squadId", "type": "uint256" },
+      { "indexed": false, "name": "attritionPotReturned", "type": "uint256" }
+    ],
+    "name": "ZombieCleaned",
+    "type": "event"
+  }
+]

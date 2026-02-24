@@ -8,6 +8,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {UnitType, Faction, Weather, SpecialEvent, Squad, BastionState, PlayerStats} from "./types/GameTypes.sol";
 import {ITreasury} from "./interfaces/ITreasury.sol";
 import {IGameEngine} from "./interfaces/IGameEngine.sol";
+import {ISeasonNFT} from "./interfaces/ISeasonNFT.sol";
 
 contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     // ═══════════════════════════════════════════
@@ -89,8 +90,9 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     //                  STORAGE
     // ═══════════════════════════════════════════
 
-    ITreasury public treasury;
-    IERC20    public usdc;
+    ITreasury  public treasury;
+    ISeasonNFT public seasonNFT;
+    IERC20     public usdc;
 
     uint256 public currentSeasonId;
     uint256 public seasonStartTime;
@@ -134,10 +136,19 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     //               CONSTRUCTOR
     // ═══════════════════════════════════════════
 
-    constructor(address _usdc, address _treasury) Ownable(msg.sender) {
+    constructor(address _usdc, address _treasury, address _seasonNFT) Ownable(msg.sender) {
         usdc = IERC20(_usdc);
         treasury = ITreasury(_treasury);
+        if (_seasonNFT != address(0)) {
+            seasonNFT = ISeasonNFT(_seasonNFT);
+        }
         nextSquadId = 1;
+    }
+
+    /// @notice Set SeasonNFT address (for circular deployment).
+    function setSeasonNFT(address _seasonNFT) external onlyOwner {
+        require(_seasonNFT != address(0), "Invalid address");
+        seasonNFT = ISeasonNFT(_seasonNFT);
     }
 
     // ═══════════════════════════════════════════
@@ -221,6 +232,12 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     /// @notice Get the length of marchingSquads for a lane.
     function getMarchingSquadCount(uint8 laneId) external view returns (uint256) {
         return marchingSquads[laneId].length;
+    }
+
+    /// @notice Get a player's hold score contribution for a specific season.
+    /// @dev    Used by Treasury.claim() to compute player's share of season rewards.
+    function getPlayerHoldScore(uint256 seasonId, address player) external view returns (uint128) {
+        return playerStats[seasonId][player].holdScoreContrib;
     }
 
     // ═══════════════════════════════════════════
@@ -359,7 +376,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         // Refund 80% via treasury
         uint256 refund = (cost * RETREAT_RETURN_BPS) / BPS_DENOM;
         uint256 penalty = cost - refund;
-        treasury.refundRetreat(msg.sender, refund);
+        treasury.refundRetreat(msg.sender, refund, laneId, uint8(s.faction), cost);
 
         emit Retreated(squadId, msg.sender, refund, penalty);
     }
@@ -438,7 +455,13 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
             winner = (currentSeasonId % 2 == 1) ? Faction.PEPE : Faction.SHIB;
         }
 
-        treasury.finalizeSeason(currentSeasonId);
+        uint256 totalHoldScore = pepeTotal + shibTotal;
+        treasury.finalizeSeason(currentSeasonId, totalHoldScore, uint8(winner));
+
+        // Mint commemorative NFTs for top-3 players
+        if (address(seasonNFT) != address(0)) {
+            seasonNFT.mintSeasonRewards(currentSeasonId, uint8(winner), top3);
+        }
 
         emit SeasonEnded(currentSeasonId, winner, top3);
     }
