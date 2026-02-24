@@ -299,13 +299,16 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
         // Distribute proportionally
         uint256 distributed;
         for (uint256 i = 0; i < winners.length;) {
-            uint256 reward = (pot * shares[i]) / totalShares;
-            pendingRewards[winners[i]] += reward;
-            distributed += reward;
-            unchecked { ++i; }
+            unchecked {
+                uint256 reward = (pot * shares[i]) / totalShares;
+                pendingRewards[winners[i]] += reward;
+                distributed += reward;
+                ++i;
+            }
         }
 
-        // Zero out the killPot (dust stays as rounding buffer)
+        // @dev Dust from integer division stays in killPot as rounding buffer.
+        // Remaining dust is swept to seasonTreasury during finalizeSeason().
         killPot[laneId][loser] = pot - distributed;
 
         emit KillRewardDistributed(laneId, loser, distributed);
@@ -339,10 +342,12 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
         // Distribute proportionally
         uint256 distributed;
         for (uint256 i = 0; i < recipients.length;) {
-            uint256 reward = (portionToDistribute * shares[i]) / totalShares;
-            pendingRewards[recipients[i]] += reward;
-            distributed += reward;
-            unchecked { ++i; }
+            unchecked {
+                uint256 reward = (portionToDistribute * shares[i]) / totalShares;
+                pendingRewards[recipients[i]] += reward;
+                distributed += reward;
+                ++i;
+            }
         }
 
         // Deduct from killPot
@@ -368,7 +373,9 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
         // Remaining refund comes from season treasury
         uint256 treasuryPortion = totalRefund - killPotPortion;
 
-        // Debit killPot (with underflow guard)
+        // @dev Underflow guards: kill pot and season treasury may have less than expected
+        // due to battle distributions or rounding dust. The deficit is absorbed by protocol
+        // seed funds (initial USDC deposited via seedTreasury). This is a known design decision.
         if (killPotPortion <= killPot[laneId][faction]) {
             killPot[laneId][faction] -= killPotPortion;
         } else {
@@ -425,14 +432,16 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
         require(!seasonResults[seasonId].finalized, "Already finalized");
 
         // Transfer remaining killPots to season treasury
-        for (uint8 lane = 0; lane < 3; lane++) {
-            for (uint8 faction = 1; faction <= 2; faction++) {
+        for (uint8 lane = 0; lane < 3;) {
+            for (uint8 faction = 1; faction <= 2;) {
                 uint256 remaining = killPot[lane][faction];
                 if (remaining > 0) {
                     seasonTreasury[seasonId] += remaining;
                     killPot[lane][faction] = 0;
                 }
+                unchecked { ++faction; }
             }
+            unchecked { ++lane; }
         }
 
         // Store season result

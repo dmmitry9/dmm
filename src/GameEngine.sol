@@ -207,7 +207,38 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         return (uint256(s.initialCount) * attritionMult) / 10_000;
     }
 
-    /// @notice Get current (unfixed) hold scores for a lane.
+    function _getEffectiveUnitsFromRef(Squad storage s) internal view returns (uint256) {
+        if (!s.active || s.seasonId != currentSeasonId) return 0;
+
+        uint256 attritionStart;
+        if (s.bastionEnteredAt > 0) {
+            attritionStart = s.bastionEnteredAt;
+        } else {
+            attritionStart = s.deployedAt + MARCH_DURATION;
+        }
+
+        if (block.timestamp <= attritionStart) {
+            return s.initialCount;
+        }
+
+        uint256 hoursInBastion = (block.timestamp - attritionStart) / 1 hours;
+
+        if (currentSpecialEvent == SpecialEvent.EPIDEMIC && block.timestamp < specialEventEndsAt) {
+            hoursInBastion = hoursInBastion * 2;
+        } else if (currentSpecialEvent == SpecialEvent.HARVEST && block.timestamp < specialEventEndsAt) {
+            hoursInBastion = hoursInBastion / 2;
+        }
+
+        if (hoursInBastion > 168) hoursInBastion = 168;
+
+        uint256 attritionMult = _getAttrition(hoursInBastion);
+        return (uint256(s.initialCount) * attritionMult) / 10_000;
+    }
+
+    /// @notice Get current (unfixed) hold scores for a lane. Includes delta since last update.
+    /// @param laneId Lane to query (0–2).
+    /// @return pepe Cumulative PEPE hold score (units × minutes).
+    /// @return shib Cumulative SHIB hold score (units × minutes).
     function getHoldScore(uint8 laneId) external view returns (uint128 pepe, uint128 shib) {
         BastionState storage b = bastions[laneId];
         pepe = b.holdScorePEPE;
@@ -224,7 +255,9 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         }
     }
 
-    /// @notice Get the length of bastionSquads for a lane.
+    /// @notice Get the number of squads currently in a bastion.
+    /// @param laneId Lane to query (0–2).
+    /// @return The number of squads in the bastion array (may include inactive entries).
     function getBastionSquadCount(uint8 laneId) external view returns (uint256) {
         return bastionSquads[laneId].length;
     }
@@ -244,7 +277,11 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     //            EXTERNAL FUNCTIONS
     // ═══════════════════════════════════════════
 
-    /// @notice Deploy a squad of units to a lane.
+    /// @notice Deploy a squad of units to a lane. Charges USDC via dynamic pricing.
+    /// @param laneId Target lane (0–2).
+    /// @param unitType Type of unit (SWORDSMAN, SPEARMAN, CAVALRY). Determines RPS combat multiplier.
+    /// @param faction Faction to deploy for (PEPE or SHIB). Locked per player per season.
+    /// @param count Number of units in the squad.
     function deployUnits(
         uint8 laneId,
         UnitType unitType,
@@ -306,6 +343,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     }
 
     /// @notice Mark a squad as arrived at the bastion. Permissionless.
+    /// @param squadId The ID of the squad that has completed its march.
     function arrive(uint256 squadId) external nonReentrant onlySeason {
         Squad storage s = squads[squadId];
         require(s.active && s.seasonId == currentSeasonId, "Invalid squad");
@@ -336,14 +374,16 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         }
     }
 
-    /// @notice Public trigger for battle resolution.
+    /// @notice Public trigger for battle resolution. Permissionless.
+    /// @param laneId Lane to resolve (0–2). Requires both factions present.
     function resolveBattle(uint8 laneId) external nonReentrant onlySeason {
         require(laneId < NUM_LANES, "Invalid lane");
         require(_hasBothFactions(laneId), "No battle needed");
         _resolveBattle(laneId);
     }
 
-    /// @notice Retreat a squad before it reaches the bastion. 20% penalty.
+    /// @notice Retreat a squad before it reaches the bastion. 20% penalty applied.
+    /// @param squadId The ID of the squad to retreat. Must be owned by msg.sender.
     function retreat(uint256 squadId) external nonReentrant onlySeason {
         Squad storage s = squads[squadId];
         require(s.active && s.seasonId == currentSeasonId, "Invalid squad");
@@ -381,7 +421,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         emit Retreated(squadId, msg.sender, refund, penalty);
     }
 
-    /// @notice Permissionless: refresh hold scores (for accuracy).
+    /// @notice Permissionless: refresh hold scores for a lane. Cleans zombie squads.
+    /// @param laneId Lane to refresh (0–2).
     function refreshHoldScore(uint8 laneId) external {
         require(laneId < NUM_LANES, "Invalid lane");
         _updateHoldScore(laneId);
@@ -391,12 +432,16 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     //          TREASURY-ONLY FUNCTIONS
     // ═══════════════════════════════════════════
 
+    /// @notice Set the current weather. Called by Treasury via VRF callback.
+    /// @param weather The new weather state.
     function setWeather(Weather weather) external override onlyTreasury {
         currentWeather = weather;
         weatherSetAt = block.timestamp;
         emit WeatherChanged(weather);
     }
 
+    /// @notice Set a special event. Called by Treasury via VRF callback. Lasts SPECIAL_EVENT_DURATION.
+    /// @param evt The special event type (EPIDEMIC, HARVEST, ECLIPSE).
     function setSpecialEvent(SpecialEvent evt) external override onlyTreasury {
         currentSpecialEvent = evt;
         specialEventEndsAt = block.timestamp + SPECIAL_EVENT_DURATION;
@@ -407,6 +452,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     //           SEASON MANAGEMENT
     // ═══════════════════════════════════════════
 
+    /// @notice Start a new season. Resets all lane states, counters, and weather.
     function startSeason() external onlyOwner {
         require(!seasonActive, "Season already active");
 
@@ -430,6 +476,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         emit SeasonStarted(currentSeasonId, seasonStartTime);
     }
 
+    /// @notice End the current season. Determines winner by total hold score, finalizes treasury, mints NFTs.
+    /// @param top3 Addresses of the top-3 players for commemorative NFTs.
     function endSeason(address[3] calldata top3) external onlyOwner {
         require(seasonActive, "No active season");
         require(block.timestamp >= seasonStartTime + SEASON_DURATION, "Too early");
@@ -493,7 +541,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
                 unchecked { ++i; }
                 continue;
             }
-            uint256 eff = getEffectiveUnits(sid);
+            uint256 eff = _getEffectiveUnitsFromRef(sq);
             if (sq.faction == Faction.PEPE) {
                 pepeIds[pepeCount] = sid;
                 pepeEffective[pepeCount] = eff;
@@ -599,9 +647,12 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         }
 
         // Phase 3: Compute survival ratio
+        // @dev Safe unchecked: winnerPower > loserPower guaranteed by Phase 2 winner determination.
+        // winnerPower > 0 guaranteed because both factions must have > 0 units to enter battle.
         uint256 winnerPower = pepeWins ? pepeCombatPower : shibCombatPower;
         uint256 loserPower  = pepeWins ? shibCombatPower : pepeCombatPower;
-        uint256 survivalBps = ((winnerPower - loserPower) * BPS_DENOM) / winnerPower;
+        uint256 survivalBps;
+        unchecked { survivalBps = ((winnerPower - loserPower) * BPS_DENOM) / winnerPower; }
 
         uint256[] memory winIds  = pepeWins ? pepeIds : shibIds;
         uint256[] memory losIds  = pepeWins ? shibIds : pepeIds;
@@ -624,7 +675,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         bool allZero = true;
 
         for (uint256 i = 0; i < winCount;) {
-            uint256 survivors = (winEff[i] * survivalBps) / BPS_DENOM;
+            uint256 survivors;
+            unchecked { survivors = (winEff[i] * survivalBps) / BPS_DENOM; }
             if (survivors > 0) {
                 allZero = false;
                 Squad storage ws = squads[winIds[i]];
@@ -747,18 +799,18 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         uint256 pepeUnits;
         uint256 shibUnits;
         uint256 i = 0;
-        while (i < ids.length) {
+        uint256 len = ids.length;
+        while (i < len) {
             uint256 sid = ids[i];
             Squad storage s = squads[sid];
             if (!s.active || s.seasonId != currentSeasonId) {
-                // Remove inactive squad (swap-and-pop)
-                ids[i] = ids[ids.length - 1];
+                ids[i] = ids[len - 1];
                 ids.pop();
+                unchecked { --len; }
                 continue;
             }
-            uint256 eff = getEffectiveUnits(sid);
+            uint256 eff = _getEffectiveUnitsFromRef(s);
             if (eff == 0) {
-                // Zombie: clean up and return attrition pot
                 uint256 attritionPot = (uint256(s.costPaid) * SPLIT_KILL_REWARD) / BPS_DENOM;
                 s.active = false;
                 if (s.faction == Faction.PEPE) {
@@ -770,11 +822,13 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
                 }
                 treasury.transferAttritionPotToTreasury(laneId, uint8(s.faction), attritionPot);
                 emit ZombieCleaned(sid, attritionPot);
-                ids[i] = ids[ids.length - 1];
+                ids[i] = ids[len - 1];
                 ids.pop();
+                unchecked { --len; }
                 continue;
             }
-            // Count units and distribute player hold score
+            // @dev Contested lanes (both factions present) don't accrue hold score.
+            // This prevents gaming via deliberate small deployments to farm score during contested periods.
             if (!b.contestedAtUpdate) {
                 if (s.faction == Faction.PEPE) {
                     pepeUnits += eff;
@@ -797,10 +851,11 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
 
     function _countBastionUnits(uint8 laneId) internal view returns (uint256 pepe, uint256 shib) {
         uint256[] storage ids = bastionSquads[laneId];
-        for (uint256 i = 0; i < ids.length;) {
+        uint256 len = ids.length;
+        for (uint256 i = 0; i < len;) {
             Squad storage s = squads[ids[i]];
             if (s.active && s.seasonId == currentSeasonId) {
-                uint256 eff = getEffectiveUnits(ids[i]);
+                uint256 eff = _getEffectiveUnitsFromRef(s);
                 if (s.faction == Faction.PEPE) {
                     pepe += eff;
                 } else {
@@ -815,6 +870,9 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     //          INTERNAL: HELPERS
     // ═══════════════════════════════════════════
 
+    /// @dev Lookup attrition multiplier from pre-computed table (big-endian uint16, 169 entries).
+    /// Returns value in [10, 10000] where 10000 = 100% (no attrition) and 10 = 0.1% (near-total loss).
+    /// Table index h = hours in bastion (0–168). Monotonically decreasing.
     function _getAttrition(uint256 h) internal pure returns (uint256) {
         require(h <= 168, "h out of range");
         uint256 offset = h * 2;
@@ -857,7 +915,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         uint256[] storage ids = bastionSquads[laneId];
         bool hasPepe;
         bool hasShib;
-        for (uint256 i = 0; i < ids.length;) {
+        uint256 len = ids.length;
+        for (uint256 i = 0; i < len;) {
             Squad storage s = squads[ids[i]];
             if (s.active && s.seasonId == currentSeasonId) {
                 if (s.faction == Faction.PEPE) hasPepe = true;
@@ -907,11 +966,13 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     function _compactBastionSquads(uint8 laneId) internal {
         uint256[] storage ids = bastionSquads[laneId];
         uint256 i = 0;
-        while (i < ids.length) {
+        uint256 len = ids.length;
+        while (i < len) {
             Squad storage s = squads[ids[i]];
             if (!s.active || s.seasonId != currentSeasonId) {
-                ids[i] = ids[ids.length - 1];
+                ids[i] = ids[len - 1];
                 ids.pop();
+                unchecked { --len; }
             } else {
                 unchecked { ++i; }
             }
