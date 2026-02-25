@@ -11,6 +11,8 @@ interface GameMapProps {
   laneSquads: SegmentSquad[][][];
   weather: number;
   specialEvent: number;
+  onResolveBattle?: (laneId: number) => void;
+  resolvingLane?: number | null;
 }
 
 const SEGMENT_LABELS = ["P-Base", "P-2", "P-1", "Bastion", "S-1", "S-2", "S-Base"];
@@ -186,12 +188,22 @@ function LaneRow({
   pepeScore,
   shibScore,
   segments,
+  onResolveBattle,
+  resolvingLane,
 }: {
   laneId: number;
   pepeScore: bigint;
   shibScore: bigint;
   segments: SegmentSquad[][];
+  onResolveBattle?: (laneId: number) => void;
+  resolvingLane?: number | null;
 }) {
+  const bastionSquads = segments[BASTION_SEGMENT] || [];
+  const hasPepeInBastion = bastionSquads.some((s) => s.faction === FACTION.PEPE);
+  const hasShibInBastion = bastionSquads.some((s) => s.faction === FACTION.SHIB);
+  const contested = hasPepeInBastion && hasShibInBastion;
+  const isResolving = resolvingLane === laneId;
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs px-1" style={{ color: "var(--text-secondary)" }}>
@@ -205,12 +217,21 @@ function LaneRow({
           <Segment key={seg} index={seg} squads={segments[seg] || []} />
         ))}
       </div>
+      {contested && onResolveBattle && (
+        <button
+          onClick={() => onResolveBattle(laneId)}
+          disabled={isResolving}
+          className="w-full py-2 rounded-lg font-bold text-sm text-white transition-all bg-gradient-to-r from-pepe via-red-500 to-shib hover:opacity-90 disabled:opacity-50"
+        >
+          {isResolving ? "⏳ Resolving..." : `⚔️ Resolve Battle — Lane ${laneId + 1}`}
+        </button>
+      )}
       <ScoreBar pepe={pepeScore} shib={shibScore} />
     </div>
   );
 }
 
-export default function GameMap({ lanes, laneSquads, weather, specialEvent }: GameMapProps) {
+export default function GameMap({ lanes, laneSquads, weather, specialEvent, onResolveBattle, resolvingLane }: GameMapProps) {
   return (
     <div className="card space-y-6">
       <div className="flex items-center justify-between">
@@ -231,6 +252,8 @@ export default function GameMap({ lanes, laneSquads, weather, specialEvent }: Ga
           pepeScore={lane.pepeScore}
           shibScore={lane.shibScore}
           segments={laneSquads[i] || Array.from({ length: 7 }, () => [])}
+          onResolveBattle={onResolveBattle}
+          resolvingLane={resolvingLane}
         />
       ))}
     </div>

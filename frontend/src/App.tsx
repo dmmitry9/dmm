@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useAccount } from "wagmi";
-import { ADDRESSES } from "./config/contracts";
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { ADDRESSES, GAME_ENGINE_ABI } from "./config/contracts";
 import ConnectWallet from "./components/ConnectWallet";
 import GameMap from "./components/GameMap";
 import SeasonInfo from "./components/SeasonInfo";
@@ -64,6 +64,26 @@ export default function App() {
     shibScore: l.shib,
   }));
 
+  // Resolve battle
+  const [resolvingLane, setResolvingLane] = useState<number | null>(null);
+  const { writeContract: resolveBattle, data: resolveTx } = useWriteContract();
+  const { isSuccess: resolveSuccess } = useWaitForTransactionReceipt({ hash: resolveTx });
+
+  if (resolveSuccess && resolvingLane !== null) {
+    setResolvingLane(null);
+    gameState.refetch();
+  }
+
+  const handleResolveBattle = (laneId: number) => {
+    setResolvingLane(laneId);
+    resolveBattle({
+      address: ADDRESSES.gameEngine,
+      abi: GAME_ENGINE_ABI,
+      functionName: "resolveBattle",
+      args: [laneId],
+    });
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--game-bg)", color: "var(--text-primary)" }}>
       {/* Header */}
@@ -104,6 +124,8 @@ export default function App() {
             laneSquads={laneSquads}
             weather={gameState.weather}
             specialEvent={gameState.specialEvent}
+            onResolveBattle={handleResolveBattle}
+            resolvingLane={resolvingLane}
           />
 
           {/* Game Info Bar */}
