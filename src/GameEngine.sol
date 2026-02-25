@@ -80,6 +80,11 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         uint8 indexed laneId, Faction winner,
         uint256 totalSurvivors, uint256 winnerPot, uint256 loserEarned
     );
+    event BattleDetails(
+        uint8 indexed laneId,
+        uint256 pepeUnitsStart, uint256 shibUnitsStart,
+        uint256 pepeCombat, uint256 shibCombat
+    );
     event SeasonStarted(uint256 indexed seasonId, uint256 startTime);
     event SeasonEnded(uint256 indexed seasonId, Faction winner, address[3] top3);
     event WeatherChanged(Weather weather);
@@ -509,6 +514,34 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     }
 
     // ═══════════════════════════════════════════
+    //     PERMISSIONLESS WEATHER/EVENT ROLLS
+    // ═══════════════════════════════════════════
+
+    /// @notice Permissionless weather roll. Uses blockhash pseudo-randomness. Rate-limited.
+    function rollWeather() external onlySeason {
+        require(block.timestamp >= weatherSetAt + WEATHER_INTERVAL, "Weather cooldown");
+        uint256 rand = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), block.timestamp)));
+        Weather w = Weather((rand % 3) + 1); // RAINY=1, SUNNY=2, FOGGY=3
+        currentWeather = w;
+        weatherSetAt = block.timestamp;
+        emit WeatherChanged(w);
+    }
+
+    /// @notice Permissionless special event roll. Uses blockhash pseudo-randomness. Rate-limited.
+    function rollSpecialEvent() external onlySeason {
+        require(block.timestamp >= specialEventEndsAt, "Event still active");
+        uint256 rand = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), block.timestamp, msg.sender)));
+        uint256 eventIndex = rand % 4; // 25% each: NONE, EPIDEMIC, HARVEST, ECLIPSE
+        if (eventIndex == 0) {
+            currentSpecialEvent = SpecialEvent.NONE;
+        } else {
+            currentSpecialEvent = SpecialEvent(eventIndex);
+            specialEventEndsAt = block.timestamp + SPECIAL_EVENT_DURATION;
+            emit SpecialEventStarted(currentSpecialEvent, specialEventEndsAt);
+        }
+    }
+
+    // ═══════════════════════════════════════════
     //           SEASON MANAGEMENT
     // ═══════════════════════════════════════════
 
@@ -683,6 +716,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
             shibCombatPower += shibPower[i];
             unchecked { ++i; }
         }
+
+        emit BattleDetails(laneId, pepeTotalUnits, shibTotalUnits, pepeCombatPower, shibCombatPower);
 
         // Phase 2: Determine winner
         bool pepeWins;

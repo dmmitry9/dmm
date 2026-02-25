@@ -48,6 +48,11 @@ export function useGameState() {
         abi: GAME_ENGINE_ABI,
         functionName: "specialEventEndsAt",
       },
+      {
+        address: ADDRESSES.gameEngine,
+        abi: GAME_ENGINE_ABI,
+        functionName: "weatherSetAt",
+      },
     ],
     query: { refetchInterval: 15_000 },
   });
@@ -63,6 +68,7 @@ export function useGameState() {
     weather: Number(data?.[5]?.result ?? 0),
     specialEvent: Number(data?.[6]?.result ?? 0),
     specialEventEndsAt: Number(data?.[7]?.result ?? 0),
+    weatherSetAt: Number(data?.[8]?.result ?? 0),
   };
 }
 
@@ -87,6 +93,19 @@ export function useLaneScores() {
   });
 
   return { lanes, isLoading };
+}
+
+// ── Player hold score for current season ──
+export function usePlayerHoldScore(seasonId: bigint | undefined, address: `0x${string}` | undefined) {
+  const { data } = useReadContract({
+    address: ADDRESSES.gameEngine,
+    abi: GAME_ENGINE_ABI,
+    functionName: "getPlayerHoldScore",
+    args: seasonId !== undefined && address ? [seasonId, address] : undefined,
+    query: { enabled: !!address && seasonId !== undefined, refetchInterval: 15_000 },
+  });
+
+  return data as bigint | undefined;
 }
 
 // ── Player faction for current season ──
@@ -385,12 +404,20 @@ export interface BattleRecord {
   totalSurvivors: number;
   winnerPot: bigint;
   loserEarned: bigint;
+  pepeUnitsStart: number;
+  shibUnitsStart: number;
+  pepeCombat: number;
+  shibCombat: number;
   timestamp: number;
   blockNumber: bigint;
 }
 
 const BATTLE_EVENT = parseAbiItem(
   "event BattleResolved(uint8 indexed laneId, uint8 winner, uint256 totalSurvivors, uint256 winnerPot, uint256 loserEarned)"
+);
+
+const BATTLE_DETAILS_EVENT = parseAbiItem(
+  "event BattleDetails(uint8 indexed laneId, uint256 pepeUnitsStart, uint256 shibUnitsStart, uint256 pepeCombat, uint256 shibCombat)"
 );
 
 export function useBattleHistory(): BattleRecord[] {
@@ -403,31 +430,47 @@ export function useBattleHistory(): BattleRecord[] {
     try {
       const currentBlock = await client.getBlockNumber();
 
-      // Try progressively smaller block ranges (public RPCs may limit getLogs range)
       const ranges = [10000n, 2000n, 500n];
-      let logs: Awaited<ReturnType<typeof client.getLogs<typeof BATTLE_EVENT>>> = [];
+      let battleLogs: Awaited<ReturnType<typeof client.getLogs<typeof BATTLE_EVENT>>> = [];
+      let detailLogs: Awaited<ReturnType<typeof client.getLogs<typeof BATTLE_DETAILS_EVENT>>> = [];
+
       for (const range of ranges) {
         const fromBlock = currentBlock > range ? currentBlock - range : 0n;
         try {
-          logs = await client.getLogs({
-            address: ADDRESSES.gameEngine,
-            event: BATTLE_EVENT,
-            fromBlock,
-            toBlock: "latest",
-          });
+          [battleLogs, detailLogs] = await Promise.all([
+            client.getLogs({
+              address: ADDRESSES.gameEngine,
+              event: BATTLE_EVENT,
+              fromBlock,
+              toBlock: "latest",
+            }),
+            client.getLogs({
+              address: ADDRESSES.gameEngine,
+              event: BATTLE_DETAILS_EVENT,
+              fromBlock,
+              toBlock: "latest",
+            }),
+          ]);
           break;
         } catch {
           continue;
         }
       }
 
-      if (logs.length === 0) {
+      if (battleLogs.length === 0) {
         setBattles([]);
         return;
       }
 
+      // Build detail lookup: blockNumber-laneId → details
+      const detailMap = new Map<string, typeof detailLogs[0]>();
+      for (const d of detailLogs) {
+        const key = `${d.blockNumber}-${Number(d.args.laneId ?? 0)}`;
+        detailMap.set(key, d);
+      }
+
       // Get unique block numbers for timestamps
-      const uniqueBlocks = [...new Set(logs.map((l) => l.blockNumber))];
+      const uniqueBlocks = [...new Set(battleLogs.map((l) => l.blockNumber))];
       const blockMap = new Map<bigint, number>();
       await Promise.all(
         uniqueBlocks.map(async (bn) => {
@@ -440,16 +483,24 @@ export function useBattleHistory(): BattleRecord[] {
         })
       );
 
-      const records: BattleRecord[] = logs
-        .map((log) => ({
-          laneId: Number(log.args.laneId ?? 0),
-          winner: Number(log.args.winner ?? 0),
-          totalSurvivors: Number(log.args.totalSurvivors ?? 0),
-          winnerPot: log.args.winnerPot ?? 0n,
-          loserEarned: log.args.loserEarned ?? 0n,
-          timestamp: blockMap.get(log.blockNumber) ?? 0,
-          blockNumber: log.blockNumber,
-        }))
+      const records: BattleRecord[] = battleLogs
+        .map((log) => {
+          const laneId = Number(log.args.laneId ?? 0);
+          const detail = detailMap.get(`${log.blockNumber}-${laneId}`);
+          return {
+            laneId,
+            winner: Number(log.args.winner ?? 0),
+            totalSurvivors: Number(log.args.totalSurvivors ?? 0),
+            winnerPot: log.args.winnerPot ?? 0n,
+            loserEarned: log.args.loserEarned ?? 0n,
+            pepeUnitsStart: Number(detail?.args.pepeUnitsStart ?? 0),
+            shibUnitsStart: Number(detail?.args.shibUnitsStart ?? 0),
+            pepeCombat: Number(detail?.args.pepeCombat ?? 0),
+            shibCombat: Number(detail?.args.shibCombat ?? 0),
+            timestamp: blockMap.get(log.blockNumber) ?? 0,
+            blockNumber: log.blockNumber,
+          };
+        })
         .sort((a, b) => Number(b.blockNumber - a.blockNumber))
         .slice(0, 10);
 

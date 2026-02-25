@@ -9,6 +9,8 @@ import RewardsPanel from "./components/RewardsPanel";
 import RulesPage from "./components/RulesPage";
 import BattleLog from "./components/BattleLog";
 import { FACTION } from "./lib/constants";
+
+const WEATHER_INTERVAL = 6 * 60 * 60; // 6 hours in seconds (matches contract)
 import {
   useGameState,
   useLaneScores,
@@ -17,6 +19,7 @@ import {
   useTreasuryBreakdown,
   useUSDCBalance,
   usePendingRewards,
+  usePlayerHoldScore,
 } from "./hooks/useGameState";
 
 function useTheme() {
@@ -59,6 +62,7 @@ export default function App() {
   const usdcBalance = useUSDCBalance(address);
   const treasuryBreakdown = useTreasuryBreakdown(gameState.seasonId);
   const pendingRewards = usePendingRewards(address);
+  const playerHoldScore = usePlayerHoldScore(gameState.seasonId, address);
 
   const laneData = lanes.map((l) => ({
     pepeScore: l.pepe,
@@ -112,6 +116,51 @@ export default function App() {
       args: [BigInt(squadId)],
     });
   };
+
+  // Roll weather
+  const [rollingWeather, setRollingWeather] = useState(false);
+  const { writeContract: rollWeatherTx, data: weatherTx } = useWriteContract();
+  const { isSuccess: weatherSuccess } = useWaitForTransactionReceipt({ hash: weatherTx });
+
+  if (weatherSuccess && rollingWeather) {
+    setRollingWeather(false);
+    gameState.refetch();
+  }
+
+  const handleRollWeather = () => {
+    setRollingWeather(true);
+    rollWeatherTx({
+      address: ADDRESSES.gameEngine,
+      abi: GAME_ENGINE_ABI,
+      functionName: "rollWeather",
+    });
+  };
+
+  // Roll special event
+  const [rollingEvent, setRollingEvent] = useState(false);
+  const { writeContract: rollEventTx, data: eventTx } = useWriteContract();
+  const { isSuccess: eventSuccess } = useWaitForTransactionReceipt({ hash: eventTx });
+
+  if (eventSuccess && rollingEvent) {
+    setRollingEvent(false);
+    gameState.refetch();
+  }
+
+  const handleRollEvent = () => {
+    setRollingEvent(true);
+    rollEventTx({
+      address: ADDRESSES.gameEngine,
+      abi: GAME_ENGINE_ABI,
+      functionName: "rollSpecialEvent",
+    });
+  };
+
+  // Cooldown checks
+  const now = Math.floor(Date.now() / 1000);
+  const weatherCooldownReady = gameState.weatherSetAt > 0
+    ? now >= gameState.weatherSetAt + WEATHER_INTERVAL
+    : true;
+  const eventCooldownReady = gameState.specialEvent === 0 || now >= gameState.specialEventEndsAt;
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--game-bg)", color: "var(--text-primary)" }}>
@@ -209,6 +258,13 @@ export default function App() {
             pendingRewards={pendingRewards}
             usdcBalance={usdcBalance}
             treasuryBreakdown={treasuryBreakdown}
+            weatherCooldownReady={weatherCooldownReady}
+            eventCooldownReady={eventCooldownReady}
+            onRollWeather={address ? handleRollWeather : undefined}
+            onRollSpecialEvent={address ? handleRollEvent : undefined}
+            isRollingWeather={rollingWeather}
+            isRollingEvent={rollingEvent}
+            playerHoldScore={playerHoldScore}
           />
 
           <DeployPanel
@@ -231,10 +287,10 @@ export default function App() {
           <h3 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>📜 How It Works</h3>
           <p>🐸 <span className="text-pepe font-semibold">PEPE</span> vs <span className="text-shib font-semibold">SHIB</span> 🐕 — pick a side and recruit units for USDC.</p>
           <p>3 lanes, 3 unit types: ⚔️ &gt; 🔱 &gt; 🐎 &gt; ⚔️ (1.5× RPS bonus).</p>
-          <p>Units march to the enemy bastion 🏰 in 90 minutes.</p>
+          <p>Units march to the enemy bastion 🏰 in 9 minutes (10× speed).</p>
           <p>💰 70% of recruits → kill pot: win battles — claim the enemy&apos;s USDC.</p>
           <p>🏦 Hold the bastion — farm USDC every minute.</p>
-          <p>🏆 Top 3 players of the winning faction receive a Season NFT at the end of each season (7 days).</p>
+          <p>🏆 Top 3 players of the winning faction receive a Season NFT at season end (~17h).</p>
           <a
             href="#rules"
             className="inline-block mt-2 text-pepe hover:text-pepe/80 font-semibold transition-colors"

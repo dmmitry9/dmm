@@ -9,7 +9,7 @@ export const ADDRESSES = {
   seasonNFT: (import.meta.env.VITE_SEASON_NFT ||
     "0x0000000000000000000000000000000000000000") as Address,
   usdc: (import.meta.env.VITE_USDC ||
-    "0x0ef5691F8bb3413B4C5CF3ae5A9172BC452324C2") as Address, // MockUSDC (deployed)
+    "0x14c67F51127399Ee595de8AD92AB5B6A9a126742") as Address, // MockUSDC v5
 } as const;
 
 // ── GameEngine ABI (minimal — only functions used by frontend) ──
@@ -198,6 +198,27 @@ export const GAME_ENGINE_ABI = [
     inputs: [{ name: "laneId", type: "uint8" }],
     outputs: [],
   },
+  {
+    name: "rollWeather",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
+  {
+    name: "rollSpecialEvent",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
+  {
+    name: "weatherSetAt",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
   // Events
   {
     name: "UnitsDeployed",
@@ -221,6 +242,17 @@ export const GAME_ENGINE_ABI = [
       { indexed: false, name: "totalSurvivors", type: "uint256" },
       { indexed: false, name: "winnerPot", type: "uint256" },
       { indexed: false, name: "loserEarned", type: "uint256" },
+    ],
+  },
+  {
+    name: "BattleDetails",
+    type: "event",
+    inputs: [
+      { indexed: true, name: "laneId", type: "uint8" },
+      { indexed: false, name: "pepeUnitsStart", type: "uint256" },
+      { indexed: false, name: "shibUnitsStart", type: "uint256" },
+      { indexed: false, name: "pepeCombat", type: "uint256" },
+      { indexed: false, name: "shibCombat", type: "uint256" },
     ],
   },
 ] as const;

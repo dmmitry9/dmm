@@ -25,12 +25,10 @@
 
 | Contract | Address |
 |----------|---------|
-| MockUSDC | `0x0ef5691F8bb3413B4C5CF3ae5A9172BC452324C2` |
-| GameEngine (v3) | `0xA9D6F72F8e2d3dF9f2EF7161e6168E64d1806dBD` |
-| Treasury (v2) | `0x901C708d2F1b1AD1248734482a02B3487027Ace3` |
-| SeasonNFT | `0xd9C47c1007026707e198f11901d667e6463df0C8` |
-| GameEngine (v2, deprecated) | `0x6b730ddd0d5BdE94BF4f3E624E0163E90320ff83` |
-| Treasury (v1, deprecated) | `0xB60CC3093BCeB8Fc809F05FB45249042B329A350` |
+| MockUSDC | `0x14c67F51127399Ee595de8AD92AB5B6A9a126742` |
+| GameEngine (v5) | `0x24224E1Aa4bF2f61d1cDc17Bfa565eC6476dFfAa` |
+| Treasury (v4) | `0x5b8fDdF85ED1c06FcCF9823A4B7Eed42E4669DC6` |
+| SeasonNFT | `0x5EAc9fF985D1104E5CE003c2e6Db7a1BEaA23879` |
 
 ### Deployer Account
 - **Address:** `0x777715E32Bad440FfAc2E6ab67dF4F2E817571d2`
@@ -165,7 +163,7 @@ stoic-rosalind/
 - **Factions:** PEPE (1) / SHIB (2), locked per season per player
 - **Lanes:** 3 lanes, 7 segments each (0=PEPE base, 3=Bastion, 6=SHIB base)
 - **Units:** Swordsman / Spearman / Cavalry (RPS: 1.5× advantage)
-- **March:** 90 minutes across 3 segments to bastion
+- **March:** 9 minutes across 3 segments to bastion (10x speed for testing)
 - **Weather:** Changes every 6 hours, +20% to one unit type
 - **Special Events:** Epidemic (2× decay), Harvest (½ decay), Eclipse (no RPS)
 - **Attrition:** ~4%/hour after march duration (0.96^h). Small stacks (1 unit) die in ~5h due to integer truncation
@@ -249,10 +247,10 @@ Most light theme issues are fixed. Some components may still use hardcoded `bg-g
 Set in `.github/workflows/deploy-frontend.yml`:
 ```
 VITE_WC_PROJECT_ID=demo
-VITE_GAME_ENGINE=0xA9D6F72F8e2d3dF9f2EF7161e6168E64d1806dBD
-VITE_TREASURY=0x901C708d2F1b1AD1248734482a02B3487027Ace3
-VITE_SEASON_NFT=0xd9C47c1007026707e198f11901d667e6463df0C8
-VITE_USDC=0x0ef5691F8bb3413B4C5CF3ae5A9172BC452324C2
+VITE_GAME_ENGINE=0x24224E1Aa4bF2f61d1cDc17Bfa565eC6476dFfAa
+VITE_TREASURY=0x5b8fDdF85ED1c06FcCF9823A4B7Eed42E4669DC6
+VITE_SEASON_NFT=0x5EAc9fF985D1104E5CE003c2e6Db7a1BEaA23879
+VITE_USDC=0x14c67F51127399Ee595de8AD92AB5B6A9a126742
 ```
 
 ---
