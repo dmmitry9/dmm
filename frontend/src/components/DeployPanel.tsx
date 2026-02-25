@@ -57,7 +57,7 @@ export default function DeployPanel({
       address: ADDRESSES.usdc,
       abi: ERC20_ABI,
       functionName: "approve",
-      args: [ADDRESSES.treasury, price],
+      args: [ADDRESSES.gameEngine, price],
     });
   };
 
