@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import type { TreasuryBreakdown } from "../hooks/useGameState";
 import {
   WEATHER_LABELS,
@@ -5,9 +6,12 @@ import {
   WEATHER_BONUS_UNIT,
   EVENT_LABELS,
   EVENT_EMOJI,
+  EVENT_DESCRIPTION,
   SEASON_DURATION,
+  WEATHER_INTERVAL,
   formatTimeRemaining,
   formatUSDC,
+  formatTime,
 } from "../lib/constants";
 
 interface SeasonInfoProps {
@@ -19,6 +23,7 @@ interface SeasonInfoProps {
   weather: number;
   specialEvent: number;
   specialEventEndsAt: number;
+  weatherSetAt: number;
   pendingRewards: bigint | undefined;
   usdcBalance: bigint | undefined;
   treasuryBreakdown: TreasuryBreakdown;
@@ -29,6 +34,7 @@ interface SeasonInfoProps {
   isRollingWeather?: boolean;
   isRollingEvent?: boolean;
   playerHoldScore?: bigint;
+  playerLaneScores?: bigint[];
 }
 
 export default function SeasonInfo({
@@ -40,6 +46,7 @@ export default function SeasonInfo({
   weather,
   specialEvent,
   specialEventEndsAt,
+  weatherSetAt,
   pendingRewards,
   usdcBalance,
   treasuryBreakdown,
@@ -50,6 +57,7 @@ export default function SeasonInfo({
   isRollingWeather,
   isRollingEvent,
   playerHoldScore,
+  playerLaneScores,
 }: SeasonInfoProps) {
   const seasonEnd = seasonStartTime
     ? Number(seasonStartTime) + SEASON_DURATION
@@ -123,62 +131,18 @@ export default function SeasonInfo({
       </div>
 
       {/* Weather + Event */}
-      <div className="p-3 rounded-lg space-y-2" style={{ backgroundColor: "var(--panel-bg)" }}>
-        <div className="flex items-center justify-between">
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>Weather</span>
-          <span className="text-sm">
-            {WEATHER_EMOJI[weather]} {WEATHER_LABELS[weather]}
-          </span>
-        </div>
-        {weather > 0 && (
-          <div className="text-xs" style={{ color: "var(--accent-yellow)" }}>
-            {WEATHER_BONUS_UNIT[weather]}
-          </div>
-        )}
-        {onRollWeather && (
-          <button
-            onClick={onRollWeather}
-            disabled={!weatherCooldownReady || isRollingWeather}
-            className="w-full text-xs py-1.5 rounded font-semibold transition-colors"
-            style={{
-              backgroundColor: weatherCooldownReady && !isRollingWeather ? "var(--accent-blue)" : "var(--btn-disabled-bg)",
-              color: weatherCooldownReady && !isRollingWeather ? "#fff" : "var(--text-muted)",
-              cursor: weatherCooldownReady && !isRollingWeather ? "pointer" : "not-allowed",
-            }}
-          >
-            {isRollingWeather ? "Rolling..." : weatherCooldownReady ? "🎲 Roll Weather" : "⏳ Weather Cooldown"}
-          </button>
-        )}
-
-        {/* Special Event */}
-        {specialEvent > 0 && (
-          <div className="pt-2 space-y-1" style={{ borderTop: "1px solid var(--game-border)" }}>
-            <div className="flex items-center justify-between">
-              <span className="text-xs" style={{ color: "var(--accent-purple)" }}>Active Event</span>
-              <span className="text-sm">
-                {EVENT_EMOJI[specialEvent]} {EVENT_LABELS[specialEvent]}
-              </span>
-            </div>
-            <div className="text-xs" style={{ color: "var(--text-secondary)" }}>
-              Ends: {formatTimeRemaining(specialEventEndsAt)}
-            </div>
-          </div>
-        )}
-        {onRollSpecialEvent && (
-          <button
-            onClick={onRollSpecialEvent}
-            disabled={!eventCooldownReady || isRollingEvent}
-            className="w-full text-xs py-1.5 rounded font-semibold transition-colors"
-            style={{
-              backgroundColor: eventCooldownReady && !isRollingEvent ? "var(--accent-purple)" : "var(--btn-disabled-bg)",
-              color: eventCooldownReady && !isRollingEvent ? "#fff" : "var(--text-muted)",
-              cursor: eventCooldownReady && !isRollingEvent ? "pointer" : "not-allowed",
-            }}
-          >
-            {isRollingEvent ? "Rolling..." : eventCooldownReady ? "🎲 Roll Event" : "⏳ Event Active"}
-          </button>
-        )}
-      </div>
+      <WeatherEventPanel
+        weather={weather}
+        specialEvent={specialEvent}
+        specialEventEndsAt={specialEventEndsAt}
+        weatherSetAt={weatherSetAt}
+        weatherCooldownReady={weatherCooldownReady}
+        eventCooldownReady={eventCooldownReady}
+        onRollWeather={onRollWeather}
+        onRollSpecialEvent={onRollSpecialEvent}
+        isRollingWeather={isRollingWeather}
+        isRollingEvent={isRollingEvent}
+      />
 
       {/* Player Stats */}
       {(usdcBalance !== undefined || pendingRewards !== undefined) && (
@@ -203,7 +167,123 @@ export default function SeasonInfo({
               {playerHoldScore !== undefined ? playerHoldScore.toString() : "0"}
             </span>
           </div>
+          {playerLaneScores && playerLaneScores.some(s => s > 0n) && (
+            <div className="space-y-1 pt-1">
+              <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Per-Lane Scores</span>
+              {playerLaneScores.map((score, i) => (
+                <div key={i} className="flex items-center justify-between text-xs">
+                  <span style={{ color: "var(--text-secondary)" }}>Lane {i + 1}</span>
+                  <span className="font-mono" style={{ color: score > 0n ? "var(--accent-yellow)" : "var(--text-muted)" }}>
+                    {score.toString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+      )}
+    </div>
+  );
+}
+
+function WeatherEventPanel({
+  weather,
+  specialEvent,
+  specialEventEndsAt,
+  weatherSetAt,
+  weatherCooldownReady,
+  eventCooldownReady,
+  onRollWeather,
+  onRollSpecialEvent,
+  isRollingWeather,
+  isRollingEvent,
+}: {
+  weather: number;
+  specialEvent: number;
+  specialEventEndsAt: number;
+  weatherSetAt: number;
+  weatherCooldownReady: boolean;
+  eventCooldownReady: boolean;
+  onRollWeather?: () => void;
+  onRollSpecialEvent?: () => void;
+  isRollingWeather?: boolean;
+  isRollingEvent?: boolean;
+}) {
+  const [now, setNow] = useState(Math.floor(Date.now() / 1000));
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const weatherCooldownEnd = weatherSetAt > 0 ? weatherSetAt + WEATHER_INTERVAL : 0;
+  const weatherRemaining = weatherCooldownEnd > now ? weatherCooldownEnd - now : 0;
+
+  return (
+    <div className="p-3 rounded-lg space-y-2" style={{ backgroundColor: "var(--panel-bg)" }}>
+      <div className="flex items-center justify-between">
+        <span className="text-xs" style={{ color: "var(--text-muted)" }}>Weather</span>
+        <span className="text-sm">
+          {WEATHER_EMOJI[weather]} {WEATHER_LABELS[weather]}
+        </span>
+      </div>
+      {weather > 0 && (
+        <div className="text-xs" style={{ color: "var(--accent-yellow)" }}>
+          {WEATHER_BONUS_UNIT[weather]}
+        </div>
+      )}
+      {/* Weather cooldown timer */}
+      <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+        {weatherRemaining > 0
+          ? `\u23F3 Next roll in ${formatTime(weatherRemaining)}`
+          : "\u2705 Ready to roll"}
+      </div>
+      {onRollWeather && (
+        <button
+          onClick={onRollWeather}
+          disabled={!weatherCooldownReady || isRollingWeather}
+          className="w-full text-xs py-1.5 rounded font-semibold transition-colors"
+          style={{
+            backgroundColor: weatherCooldownReady && !isRollingWeather ? "var(--accent-blue)" : "var(--btn-disabled-bg)",
+            color: weatherCooldownReady && !isRollingWeather ? "#fff" : "var(--text-muted)",
+            cursor: weatherCooldownReady && !isRollingWeather ? "pointer" : "not-allowed",
+          }}
+        >
+          {isRollingWeather ? "Rolling..." : weatherCooldownReady ? "\uD83C\uDFB2 Roll Weather" : "\u23F3 Weather Cooldown"}
+        </button>
+      )}
+
+      {/* Special Event */}
+      {specialEvent > 0 && (
+        <div className="pt-2 space-y-1" style={{ borderTop: "1px solid var(--game-border)" }}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs" style={{ color: "var(--accent-purple)" }}>Active Event</span>
+            <span className="text-sm">
+              {EVENT_EMOJI[specialEvent]} {EVENT_LABELS[specialEvent]}
+            </span>
+          </div>
+          {EVENT_DESCRIPTION[specialEvent] && (
+            <div className="text-xs" style={{ color: "var(--accent-purple)" }}>
+              {EVENT_DESCRIPTION[specialEvent]}
+            </div>
+          )}
+          <div className="text-xs" style={{ color: "var(--text-secondary)" }}>
+            Ends: {formatTimeRemaining(specialEventEndsAt)}
+          </div>
+        </div>
+      )}
+      {onRollSpecialEvent && (
+        <button
+          onClick={onRollSpecialEvent}
+          disabled={!eventCooldownReady || isRollingEvent}
+          className="w-full text-xs py-1.5 rounded font-semibold transition-colors"
+          style={{
+            backgroundColor: eventCooldownReady && !isRollingEvent ? "var(--accent-purple)" : "var(--btn-disabled-bg)",
+            color: eventCooldownReady && !isRollingEvent ? "#fff" : "var(--text-muted)",
+            cursor: eventCooldownReady && !isRollingEvent ? "pointer" : "not-allowed",
+          }}
+        >
+          {isRollingEvent ? "Rolling..." : eventCooldownReady ? "\uD83C\uDFB2 Roll Event" : "\u23F3 Event Active"}
+        </button>
       )}
     </div>
   );

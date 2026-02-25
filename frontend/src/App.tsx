@@ -8,9 +8,7 @@ import DeployPanel from "./components/DeployPanel";
 import RewardsPanel from "./components/RewardsPanel";
 import RulesPage from "./components/RulesPage";
 import BattleLog from "./components/BattleLog";
-import { FACTION } from "./lib/constants";
-
-const WEATHER_INTERVAL = 6 * 60 * 60; // 6 hours in seconds (matches contract)
+import { FACTION, WEATHER_INTERVAL } from "./lib/constants";
 import {
   useGameState,
   useLaneScores,
@@ -20,6 +18,7 @@ import {
   useUSDCBalance,
   usePendingRewards,
   usePlayerHoldScore,
+  usePlayerLaneScores,
 } from "./hooks/useGameState";
 
 function useTheme() {
@@ -58,11 +57,12 @@ export default function App() {
   const gameState = useGameState();
   const { lanes } = useLaneScores();
   const laneSquads = useLaneSquads();
-  const battleHistory = useBattleHistory();
+  const history = useBattleHistory();
   const usdcBalance = useUSDCBalance(address);
   const treasuryBreakdown = useTreasuryBreakdown(gameState.seasonId);
   const pendingRewards = usePendingRewards(address);
   const playerHoldScore = usePlayerHoldScore(gameState.seasonId, address);
+  const playerLaneScores = usePlayerLaneScores(gameState.seasonId, address);
 
   const laneData = lanes.map((l) => ({
     pepeScore: l.pepe,
@@ -113,6 +113,26 @@ export default function App() {
       address: ADDRESSES.gameEngine,
       abi: GAME_ENGINE_ABI,
       functionName: "arrive",
+      args: [BigInt(squadId)],
+    });
+  };
+
+  // Retreat squads
+  const [retreatingSquadId, setRetreatingSquadId] = useState<number | null>(null);
+  const { writeContract: retreatSquad, data: retreatTx } = useWriteContract();
+  const { isSuccess: retreatSuccess } = useWaitForTransactionReceipt({ hash: retreatTx });
+
+  if (retreatSuccess && retreatingSquadId !== null) {
+    setRetreatingSquadId(null);
+    gameState.refetch();
+  }
+
+  const handleRetreatSquad = (squadId: number) => {
+    setRetreatingSquadId(squadId);
+    retreatSquad({
+      address: ADDRESSES.gameEngine,
+      abi: GAME_ENGINE_ABI,
+      functionName: "retreat",
       args: [BigInt(squadId)],
     });
   };
@@ -202,10 +222,13 @@ export default function App() {
             laneSquads={laneSquads}
             weather={gameState.weather}
             specialEvent={gameState.specialEvent}
+            address={address}
             onResolveBattle={handleResolveBattle}
             resolvingLane={resolvingLane}
             onArriveSquad={handleArriveSquad}
             arrivingSquadId={arrivingSquadId}
+            onRetreatSquad={address ? handleRetreatSquad : undefined}
+            retreatingSquadId={retreatingSquadId}
           />
 
           {/* Game Info Bar */}
@@ -229,7 +252,7 @@ export default function App() {
             </div>
           </div>
 
-          <BattleLog battles={battleHistory} />
+          <BattleLog history={history} />
 
           {/* Spectator notice */}
           {!address && (
@@ -255,6 +278,7 @@ export default function App() {
             weather={gameState.weather}
             specialEvent={gameState.specialEvent}
             specialEventEndsAt={gameState.specialEventEndsAt}
+            weatherSetAt={gameState.weatherSetAt}
             pendingRewards={pendingRewards}
             usdcBalance={usdcBalance}
             treasuryBreakdown={treasuryBreakdown}
@@ -265,6 +289,7 @@ export default function App() {
             isRollingWeather={rollingWeather}
             isRollingEvent={rollingEvent}
             playerHoldScore={playerHoldScore}
+            playerLaneScores={playerLaneScores}
           />
 
           <DeployPanel

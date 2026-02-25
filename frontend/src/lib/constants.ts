@@ -3,6 +3,7 @@
 export const SEGMENT_DURATION = 3 * 60; // 3 minutes in seconds (10x speed)
 export const MARCH_DURATION = 9 * 60; // 9 minutes (10x speed)
 export const SEASON_DURATION = 60480; // ~16.8 hours (10x speed)
+export const WEATHER_INTERVAL = 36 * 60; // 36 minutes (10x speed, was 6 hours)
 export const BASTION_SEGMENT = 3;
 export const NUM_LANES = 3;
 
@@ -77,6 +78,12 @@ export const EVENT_EMOJI: Record<number, string> = {
   [SPECIAL_EVENT.EPIDEMIC]: "\uD83E\uDDA0",
   [SPECIAL_EVENT.HARVEST]: "\uD83C\uDF3E",
   [SPECIAL_EVENT.ECLIPSE]: "\uD83C\uDF11",
+};
+
+export const EVENT_DESCRIPTION: Record<number, string> = {
+  [SPECIAL_EVENT.EPIDEMIC]: "\u26A0\uFE0F 2\u00D7 attrition \u2014 units decay twice as fast",
+  [SPECIAL_EVENT.HARVEST]: "\uD83C\uDF3F \u00BD attrition \u2014 units last twice as long",
+  [SPECIAL_EVENT.ECLIPSE]: "\uD83C\uDF11 RPS disabled \u2014 all combat is equal power",
 };
 
 export const FACTION_LABELS: Record<number, string> = {

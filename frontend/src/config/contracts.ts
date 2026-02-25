@@ -9,7 +9,7 @@ export const ADDRESSES = {
   seasonNFT: (import.meta.env.VITE_SEASON_NFT ||
     "0x0000000000000000000000000000000000000000") as Address,
   usdc: (import.meta.env.VITE_USDC ||
-    "0x14c67F51127399Ee595de8AD92AB5B6A9a126742") as Address, // MockUSDC v5
+    "0x5d5a379eE59D0EE533AB6C35D98B251e0487e45C") as Address, // MockUSDC v6
 } as const;
 
 // ── GameEngine ABI (minimal — only functions used by frontend) ──
@@ -102,6 +102,17 @@ export const GAME_ENGINE_ABI = [
     inputs: [
       { name: "seasonId", type: "uint256" },
       { name: "player", type: "address" },
+    ],
+    outputs: [{ type: "uint128" }],
+  },
+  {
+    name: "getPlayerLaneScore",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "seasonId", type: "uint256" },
+      { name: "player", type: "address" },
+      { name: "laneId", type: "uint8" },
     ],
     outputs: [{ type: "uint128" }],
   },
@@ -253,6 +264,20 @@ export const GAME_ENGINE_ABI = [
       { indexed: false, name: "shibUnitsStart", type: "uint256" },
       { indexed: false, name: "pepeCombat", type: "uint256" },
       { indexed: false, name: "shibCombat", type: "uint256" },
+    ],
+  },
+  {
+    name: "Retreated",
+    type: "event",
+    inputs: [
+      { indexed: true, name: "squadId", type: "uint256" },
+      { indexed: true, name: "owner", type: "address" },
+      { indexed: false, name: "faction", type: "uint8" },
+      { indexed: false, name: "laneId", type: "uint8" },
+      { indexed: false, name: "unitType", type: "uint8" },
+      { indexed: false, name: "units", type: "uint32" },
+      { indexed: false, name: "refund", type: "uint256" },
+      { indexed: false, name: "penalty", type: "uint256" },
     ],
   },
 ] as const;

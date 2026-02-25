@@ -18,8 +18,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     uint256 public constant SEGMENT_DURATION       = 3 minutes;  // 10x speed (was 30 min)
     uint256 public constant MARCH_DURATION         = 9 minutes;  // 10x speed (was 90 min)
     uint256 public constant ATTRITION_TICK         = 6 minutes;  // 10x speed: 6 min = 1 "hour" of attrition (was 1 hour)
-    uint256 public constant WEATHER_INTERVAL       = 6 hours;
-    uint256 public constant SPECIAL_EVENT_DURATION = 2 hours;
+    uint256 public constant WEATHER_INTERVAL       = 36 minutes; // 10x speed (was 6 hours)
+    uint256 public constant SPECIAL_EVENT_DURATION = 24 minutes; // 5x speed (was 2 hours)
     uint256 public constant SEASON_DURATION        = 60480;      // 10x speed: ~16.8h (was 7 days)
     uint8   public constant BASTION_SEGMENT        = 3;
     uint8   public constant PEPE_START_SEGMENT     = 0;
@@ -75,7 +75,11 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         uint8 laneId, UnitType unitType, uint32 count, uint256 cost
     );
     event SquadArrived(uint256 indexed squadId, uint8 laneId);
-    event Retreated(uint256 indexed squadId, address indexed owner, uint256 refund, uint256 penalty);
+    event Retreated(
+        uint256 indexed squadId, address indexed owner,
+        uint8 faction, uint8 laneId, uint8 unitType, uint32 units,
+        uint256 refund, uint256 penalty
+    );
     event BattleResolved(
         uint8 indexed laneId, Faction winner,
         uint256 totalSurvivors, uint256 winnerPot, uint256 loserEarned
@@ -112,6 +116,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
 
     BastionState[3] public bastions;
     mapping(uint256 => mapping(address => PlayerStats)) public playerStats; // seasonId => player => stats
+    mapping(uint256 => mapping(address => uint128[3])) public playerLaneScores; // seasonId => player => per-lane scores
 
     uint256 public totalUnitsPEPE;
     uint256 public totalUnitsSHIB;
@@ -282,6 +287,12 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         return playerStats[seasonId][player].holdScoreContrib;
     }
 
+    /// @notice Get a player's hold score contribution for a specific season and lane.
+    function getPlayerLaneScore(uint256 seasonId, address player, uint8 laneId) external view returns (uint128) {
+        require(laneId < NUM_LANES, "Invalid lane");
+        return playerLaneScores[seasonId][player][laneId];
+    }
+
     // ═══════════════════════════════════════════
     //            EXTERNAL FUNCTIONS
     // ═══════════════════════════════════════════
@@ -445,7 +456,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         uint256 penalty = cost - refund;
         treasury.refundRetreat(msg.sender, refund, laneId, uint8(s.faction), cost);
 
-        emit Retreated(squadId, msg.sender, refund, penalty);
+        emit Retreated(squadId, msg.sender, uint8(s.faction), laneId, uint8(s.unitType), s.initialCount, refund, penalty);
     }
 
     /// @notice Permissionless: refresh hold scores for a lane. Cleans zombie squads.
@@ -580,8 +591,10 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         // Determine winner by total hold score across all 3 bastions
         uint256 pepeTotal;
         uint256 shibTotal;
+        uint256[3] memory laneHoldScores;
         for (uint8 i = 0; i < NUM_LANES; i++) {
             _updateHoldScore(i);
+            laneHoldScores[i] = uint256(bastions[i].holdScorePEPE) + uint256(bastions[i].holdScoreSHIB);
             pepeTotal += bastions[i].holdScorePEPE;
             shibTotal += bastions[i].holdScoreSHIB;
         }
@@ -592,12 +605,11 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         } else if (shibTotal > pepeTotal) {
             winner = Faction.SHIB;
         } else {
-            // True tie: alternate by season to avoid systematic bias
             winner = (currentSeasonId % 2 == 1) ? Faction.PEPE : Faction.SHIB;
         }
 
         uint256 totalHoldScore = pepeTotal + shibTotal;
-        treasury.finalizeSeason(currentSeasonId, totalHoldScore, uint8(winner));
+        treasury.finalizeSeason(currentSeasonId, totalHoldScore, uint8(winner), laneHoldScores);
 
         // Mint commemorative NFTs for top-3 players
         if (address(seasonNFT) != address(0)) {
@@ -920,6 +932,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
                             if (s.faction == Faction.PEPE) pepeUnits += effAtPeriodStart;
                             else shibUnits += effAtPeriodStart;
                             playerStats[currentSeasonId][s.owner].holdScoreContrib += uint128(effAtPeriodStart * minutesDelta);
+                            playerLaneScores[currentSeasonId][s.owner][laneId] += uint128(effAtPeriodStart * minutesDelta);
                         }
                     }
                 }
@@ -951,6 +964,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
                     shibUnits += eff;
                 }
                 playerStats[currentSeasonId][s.owner].holdScoreContrib += uint128(eff * minutesDelta);
+                playerLaneScores[currentSeasonId][s.owner][laneId] += uint128(eff * minutesDelta);
             }
             unchecked { ++i; }
         }

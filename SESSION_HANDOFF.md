@@ -25,10 +25,10 @@
 
 | Contract | Address |
 |----------|---------|
-| MockUSDC | `0x14c67F51127399Ee595de8AD92AB5B6A9a126742` |
-| GameEngine (v5) | `0x24224E1Aa4bF2f61d1cDc17Bfa565eC6476dFfAa` |
-| Treasury (v4) | `0x5b8fDdF85ED1c06FcCF9823A4B7Eed42E4669DC6` |
-| SeasonNFT | `0x5EAc9fF985D1104E5CE003c2e6Db7a1BEaA23879` |
+| MockUSDC | `0x5d5a379eE59D0EE533AB6C35D98B251e0487e45C` |
+| GameEngine (v6) | `0x9A6d6B625077edF9b18dFD27dA96ebFC8D742eB1` |
+| Treasury (v5) | `0xB493Ae859B2f76B8402d40CD19fAA893a7faF942` |
+| SeasonNFT | `0xcdC2752697416aeA5B31C2ca1F8d1F6894E59A4E` |
 
 ### Deployer Account
 - **Address:** `0x777715E32Bad440FfAc2E6ab67dF4F2E817571d2`
@@ -211,7 +211,12 @@ a0f1c33 fix: accent colors contrast for light theme
 e70f920 feat: add Resolve Battle button when bastion is contested
 2ad427a feat: add Arrive button for squads that finished marching
 d7a2405 fix: cleanup marching zombie squads + effective forces counter
-4363074 feat: add attrition decay table to rules page          ← LATEST
+4363074 feat: add attrition decay table to rules page
+2d9bf80 fix: cast squadId to bigint for arrive() contract call
+5d589bf fix: hold score attrition bug + 10x speed for testing
+1604b44 fix: battle history resilient to RPC failures
+48ee99e feat: enhanced battle log, weather buttons, player hold score
+XXXXXXX feat: per-lane treasury, retreat button, weather timer, event descriptions ← LATEST
 ```
 
 ---
@@ -229,9 +234,14 @@ Most light theme issues are fixed. Some components may still use hardcoded `bg-g
 - ~~Fix light theme colors~~ → Mostly done (commits `6f1e063`, `a0f1c33`)
 - ~~Zombie cleanup for marching squads~~ → Done (commit `d7a2405`)
 - ~~Effective forces counter~~ → Done (commit `d7a2405`)
+- ~~Per-lane treasury distribution~~ → Done (v6 contracts)
+- ~~Retreat button~~ → Done (v6 contracts)
+- ~~Weather cooldown timer~~ → Done
+- ~~Event attrition descriptions~~ → Done
+- ~~Retreat history in battle log~~ → Done
+- ~~Reduced cooldowns (weather 10×, events 5×)~~ → Done
 
 ### Possible Next Steps
-- Add "Retreat" button for marching squads (80% refund)
 - Player's own squads highlighting / management panel
 - Auto-refresh squad positions with animation
 - Mobile responsive layout improvements
@@ -247,10 +257,10 @@ Most light theme issues are fixed. Some components may still use hardcoded `bg-g
 Set in `.github/workflows/deploy-frontend.yml`:
 ```
 VITE_WC_PROJECT_ID=demo
-VITE_GAME_ENGINE=0x24224E1Aa4bF2f61d1cDc17Bfa565eC6476dFfAa
-VITE_TREASURY=0x5b8fDdF85ED1c06FcCF9823A4B7Eed42E4669DC6
-VITE_SEASON_NFT=0x5EAc9fF985D1104E5CE003c2e6Db7a1BEaA23879
-VITE_USDC=0x14c67F51127399Ee595de8AD92AB5B6A9a126742
+VITE_GAME_ENGINE=0x9A6d6B625077edF9b18dFD27dA96ebFC8D742eB1
+VITE_TREASURY=0xB493Ae859B2f76B8402d40CD19fAA893a7faF942
+VITE_SEASON_NFT=0xcdC2752697416aeA5B31C2ca1F8d1F6894E59A4E
+VITE_USDC=0x5d5a379eE59D0EE533AB6C35D98B251e0487e45C
 ```
 
 ---

@@ -11,10 +11,13 @@ interface GameMapProps {
   laneSquads: SegmentSquad[][][];
   weather: number;
   specialEvent: number;
+  address?: string;
   onResolveBattle?: (laneId: number) => void;
   resolvingLane?: number | null;
   onArriveSquad?: (squadId: number) => void;
   arrivingSquadId?: number | null;
+  onRetreatSquad?: (squadId: number) => void;
+  retreatingSquadId?: number | null;
 }
 
 const SEGMENT_LABELS = ["P-Base", "P-2", "P-1", "Bastion", "S-1", "S-2", "S-Base"];
@@ -190,19 +193,25 @@ function LaneRow({
   pepeScore,
   shibScore,
   segments,
+  address,
   onResolveBattle,
   resolvingLane,
   onArriveSquad,
   arrivingSquadId,
+  onRetreatSquad,
+  retreatingSquadId,
 }: {
   laneId: number;
   pepeScore: bigint;
   shibScore: bigint;
   segments: SegmentSquad[][];
+  address?: string;
   onResolveBattle?: (laneId: number) => void;
   resolvingLane?: number | null;
   onArriveSquad?: (squadId: number) => void;
   arrivingSquadId?: number | null;
+  onRetreatSquad?: (squadId: number) => void;
+  retreatingSquadId?: number | null;
 }) {
   const bastionSquads = segments[BASTION_SEGMENT] || [];
   const hasPepeInBastion = bastionSquads.some((s) => s.faction === FACTION.PEPE && !s.isMarching);
@@ -242,6 +251,27 @@ function LaneRow({
             : `🏰 Arrive — ${readyToArrive.length} squad${readyToArrive.length > 1 ? "s" : ""} ready (Lane ${laneId + 1})`}
         </button>
       )}
+      {/* Retreat button for player's marching squads (not yet at bastion) */}
+      {address && onRetreatSquad && (() => {
+        const playerMarchingSquads = segments
+          .flatMap((seg) => seg)
+          .filter((s) => s.isMarching && s.owner.toLowerCase() === address.toLowerCase());
+        if (playerMarchingSquads.length === 0) return null;
+        const squad = playerMarchingSquads[0];
+        const isRetreating = retreatingSquadId === squad.squadId;
+        return (
+          <button
+            onClick={() => onRetreatSquad(squad.squadId)}
+            disabled={isRetreating}
+            className="w-full py-2 rounded-lg font-bold text-sm text-white transition-all hover:opacity-90 disabled:opacity-50"
+            style={{ background: "linear-gradient(to right, #ef4444, #dc2626)" }}
+          >
+            {isRetreating
+              ? "⏳ Retreating..."
+              : `🏃 Retreat — ${playerMarchingSquads.length} squad${playerMarchingSquads.length > 1 ? "s" : ""} marching (Lane ${laneId + 1})`}
+          </button>
+        );
+      })()}
       {contested && onResolveBattle && (
         <button
           onClick={() => onResolveBattle(laneId)}
@@ -256,7 +286,7 @@ function LaneRow({
   );
 }
 
-export default function GameMap({ lanes, laneSquads, weather, specialEvent, onResolveBattle, resolvingLane, onArriveSquad, arrivingSquadId }: GameMapProps) {
+export default function GameMap({ lanes, laneSquads, weather, specialEvent, address, onResolveBattle, resolvingLane, onArriveSquad, arrivingSquadId, onRetreatSquad, retreatingSquadId }: GameMapProps) {
   return (
     <div className="card space-y-6">
       <div className="flex items-center justify-between">
@@ -277,10 +307,13 @@ export default function GameMap({ lanes, laneSquads, weather, specialEvent, onRe
           pepeScore={lane.pepeScore}
           shibScore={lane.shibScore}
           segments={laneSquads[i] || Array.from({ length: 7 }, () => [])}
+          address={address}
           onResolveBattle={onResolveBattle}
           resolvingLane={resolvingLane}
           onArriveSquad={onArriveSquad}
           arrivingSquadId={arrivingSquadId}
+          onRetreatSquad={onRetreatSquad}
+          retreatingSquadId={retreatingSquadId}
         />
       ))}
     </div>

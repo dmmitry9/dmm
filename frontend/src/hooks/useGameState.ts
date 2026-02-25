@@ -227,9 +227,25 @@ export function useTreasuryBreakdown(seasonId: bigint | undefined): TreasuryBrea
   };
 }
 
+// ── Player per-lane hold scores for current season ──
+export function usePlayerLaneScores(seasonId: bigint | undefined, address: `0x${string}` | undefined) {
+  const { data } = useReadContracts({
+    contracts: [0, 1, 2].map((laneId) => ({
+      address: ADDRESSES.gameEngine,
+      abi: GAME_ENGINE_ABI,
+      functionName: "getPlayerLaneScore" as const,
+      args: [seasonId ?? 0n, address ?? "0x0000000000000000000000000000000000000000", laneId] as const,
+    })),
+    query: { enabled: !!address && seasonId !== undefined, refetchInterval: 15_000 },
+  });
+
+  return [0, 1, 2].map((i) => (data?.[i]?.result as bigint) ?? 0n);
+}
+
 // ── Squad info for all lanes (3-step multicall) ──
 export interface SegmentSquad {
   squadId: number;
+  owner: string;
   faction: number;
   unitType: number;
   effectiveUnits: number;
@@ -376,6 +392,7 @@ export function useLaneSquads(): LaneSquads {
       if (lane < NUM_LANES && segment < 7) {
         result[lane][segment].push({
           squadId: squadIds[i],
+          owner: squadData[0] as string,
           faction: squadData[3],
           unitType: squadData[2],
           effectiveUnits: effective,
@@ -397,8 +414,9 @@ export function useLaneSquads(): LaneSquads {
   return laneSquads;
 }
 
-// ── Battle history from BattleResolved events ──
+// ── Battle + Retreat history from on-chain events ──
 export interface BattleRecord {
+  type: "battle";
   laneId: number;
   winner: number;
   totalSurvivors: number;
@@ -412,6 +430,21 @@ export interface BattleRecord {
   blockNumber: bigint;
 }
 
+export interface RetreatRecord {
+  type: "retreat";
+  laneId: number;
+  faction: number;
+  unitType: number;
+  units: number;
+  refund: bigint;
+  penalty: bigint;
+  owner: string;
+  timestamp: number;
+  blockNumber: bigint;
+}
+
+export type HistoryRecord = BattleRecord | RetreatRecord;
+
 const BATTLE_EVENT = parseAbiItem(
   "event BattleResolved(uint8 indexed laneId, uint8 winner, uint256 totalSurvivors, uint256 winnerPot, uint256 loserEarned)"
 );
@@ -420,11 +453,15 @@ const BATTLE_DETAILS_EVENT = parseAbiItem(
   "event BattleDetails(uint8 indexed laneId, uint256 pepeUnitsStart, uint256 shibUnitsStart, uint256 pepeCombat, uint256 shibCombat)"
 );
 
-export function useBattleHistory(): BattleRecord[] {
-  const client = usePublicClient();
-  const [battles, setBattles] = useState<BattleRecord[]>([]);
+const RETREATED_EVENT = parseAbiItem(
+  "event Retreated(uint256 indexed squadId, address indexed owner, uint8 faction, uint8 laneId, uint8 unitType, uint32 units, uint256 refund, uint256 penalty)"
+);
 
-  const fetchBattles = useCallback(async () => {
+export function useBattleHistory(): HistoryRecord[] {
+  const client = usePublicClient();
+  const [history, setHistory] = useState<HistoryRecord[]>([]);
+
+  const fetchHistory = useCallback(async () => {
     if (!client) return;
 
     try {
@@ -433,11 +470,12 @@ export function useBattleHistory(): BattleRecord[] {
       const ranges = [10000n, 2000n, 500n];
       let battleLogs: Awaited<ReturnType<typeof client.getLogs<typeof BATTLE_EVENT>>> = [];
       let detailLogs: Awaited<ReturnType<typeof client.getLogs<typeof BATTLE_DETAILS_EVENT>>> = [];
+      let retreatLogs: Awaited<ReturnType<typeof client.getLogs<typeof RETREATED_EVENT>>> = [];
 
       for (const range of ranges) {
         const fromBlock = currentBlock > range ? currentBlock - range : 0n;
         try {
-          [battleLogs, detailLogs] = await Promise.all([
+          [battleLogs, detailLogs, retreatLogs] = await Promise.all([
             client.getLogs({
               address: ADDRESSES.gameEngine,
               event: BATTLE_EVENT,
@@ -450,6 +488,12 @@ export function useBattleHistory(): BattleRecord[] {
               fromBlock,
               toBlock: "latest",
             }),
+            client.getLogs({
+              address: ADDRESSES.gameEngine,
+              event: RETREATED_EVENT,
+              fromBlock,
+              toBlock: "latest",
+            }),
           ]);
           break;
         } catch {
@@ -457,8 +501,8 @@ export function useBattleHistory(): BattleRecord[] {
         }
       }
 
-      if (battleLogs.length === 0) {
-        setBattles([]);
+      if (battleLogs.length === 0 && retreatLogs.length === 0) {
+        setHistory([]);
         return;
       }
 
@@ -470,7 +514,11 @@ export function useBattleHistory(): BattleRecord[] {
       }
 
       // Get unique block numbers for timestamps
-      const uniqueBlocks = [...new Set(battleLogs.map((l) => l.blockNumber))];
+      const allBlocks = [
+        ...battleLogs.map((l) => l.blockNumber),
+        ...retreatLogs.map((l) => l.blockNumber),
+      ];
+      const uniqueBlocks = [...new Set(allBlocks)];
       const blockMap = new Map<bigint, number>();
       await Promise.all(
         uniqueBlocks.map(async (bn) => {
@@ -483,38 +531,53 @@ export function useBattleHistory(): BattleRecord[] {
         })
       );
 
-      const records: BattleRecord[] = battleLogs
-        .map((log) => {
-          const laneId = Number(log.args.laneId ?? 0);
-          const detail = detailMap.get(`${log.blockNumber}-${laneId}`);
-          return {
-            laneId,
-            winner: Number(log.args.winner ?? 0),
-            totalSurvivors: Number(log.args.totalSurvivors ?? 0),
-            winnerPot: log.args.winnerPot ?? 0n,
-            loserEarned: log.args.loserEarned ?? 0n,
-            pepeUnitsStart: Number(detail?.args.pepeUnitsStart ?? 0),
-            shibUnitsStart: Number(detail?.args.shibUnitsStart ?? 0),
-            pepeCombat: Number(detail?.args.pepeCombat ?? 0),
-            shibCombat: Number(detail?.args.shibCombat ?? 0),
-            timestamp: blockMap.get(log.blockNumber) ?? 0,
-            blockNumber: log.blockNumber,
-          };
-        })
-        .sort((a, b) => Number(b.blockNumber - a.blockNumber))
-        .slice(0, 10);
+      const battleRecords: HistoryRecord[] = battleLogs.map((log) => {
+        const laneId = Number(log.args.laneId ?? 0);
+        const detail = detailMap.get(`${log.blockNumber}-${laneId}`);
+        return {
+          type: "battle" as const,
+          laneId,
+          winner: Number(log.args.winner ?? 0),
+          totalSurvivors: Number(log.args.totalSurvivors ?? 0),
+          winnerPot: log.args.winnerPot ?? 0n,
+          loserEarned: log.args.loserEarned ?? 0n,
+          pepeUnitsStart: Number(detail?.args.pepeUnitsStart ?? 0),
+          shibUnitsStart: Number(detail?.args.shibUnitsStart ?? 0),
+          pepeCombat: Number(detail?.args.pepeCombat ?? 0),
+          shibCombat: Number(detail?.args.shibCombat ?? 0),
+          timestamp: blockMap.get(log.blockNumber) ?? 0,
+          blockNumber: log.blockNumber,
+        };
+      });
 
-      setBattles(records);
+      const retreatRecords: HistoryRecord[] = retreatLogs.map((log) => ({
+        type: "retreat" as const,
+        laneId: Number(log.args.laneId ?? 0),
+        faction: Number(log.args.faction ?? 0),
+        unitType: Number(log.args.unitType ?? 0),
+        units: Number(log.args.units ?? 0),
+        refund: log.args.refund ?? 0n,
+        penalty: log.args.penalty ?? 0n,
+        owner: (log.args.owner ?? "") as string,
+        timestamp: blockMap.get(log.blockNumber) ?? 0,
+        blockNumber: log.blockNumber,
+      }));
+
+      const merged = [...battleRecords, ...retreatRecords]
+        .sort((a, b) => Number(b.blockNumber - a.blockNumber))
+        .slice(0, 15);
+
+      setHistory(merged);
     } catch (err) {
       console.error("Battle history fetch failed:", err);
     }
   }, [client]);
 
   useEffect(() => {
-    fetchBattles();
-    const interval = setInterval(fetchBattles, 15_000);
+    fetchHistory();
+    const interval = setInterval(fetchHistory, 15_000);
     return () => clearInterval(interval);
-  }, [fetchBattles]);
+  }, [fetchHistory]);
 
-  return battles;
+  return history;
 }

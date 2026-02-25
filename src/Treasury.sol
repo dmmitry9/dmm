@@ -79,6 +79,7 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
         uint256 totalHoldScore;
         uint256 treasuryBalance; // snapshot at finalize time
         uint256 totalClaimed;
+        uint256[3] laneHoldScores; // per-lane totals
     }
     mapping(uint256 => SeasonResult) public seasonResults;
     mapping(uint256 => mapping(address => bool)) public hasClaimed;
@@ -432,7 +433,8 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
     function finalizeSeason(
         uint256 seasonId,
         uint256 totalHoldScore,
-        uint8 winnerFaction
+        uint8 winnerFaction,
+        uint256[3] calldata laneHoldScores
     ) external override onlyGameEngine {
         require(!seasonResults[seasonId].finalized, "Already finalized");
 
@@ -449,14 +451,16 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
             unchecked { ++lane; }
         }
 
-        // Store season result
-        seasonResults[seasonId] = SeasonResult({
-            finalized: true,
-            winnerFaction: winnerFaction,
-            totalHoldScore: totalHoldScore,
-            treasuryBalance: seasonTreasury[seasonId],
-            totalClaimed: 0
-        });
+        // Store season result with per-lane hold scores
+        SeasonResult storage result = seasonResults[seasonId];
+        result.finalized = true;
+        result.winnerFaction = winnerFaction;
+        result.totalHoldScore = totalHoldScore;
+        result.treasuryBalance = seasonTreasury[seasonId];
+        result.totalClaimed = 0;
+        result.laneHoldScores[0] = laneHoldScores[0];
+        result.laneHoldScores[1] = laneHoldScores[1];
+        result.laneHoldScores[2] = laneHoldScores[2];
 
         emit SeasonFinalized(seasonId, winnerFaction, seasonTreasury[seasonId]);
     }
@@ -468,23 +472,39 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
         require(!hasClaimed[seasonId][msg.sender], "Already claimed");
         require(result.totalHoldScore > 0, "No hold score in season");
 
-        // Query player's hold score from GameEngine
-        uint128 playerHoldScore = IGameEngineExtended(address(gameEngine))
-            .getPlayerHoldScore(seasonId, msg.sender);
-        require(playerHoldScore > 0, "No contribution");
+        // Per-lane distribution: treasury split equally across 3 lanes
+        // Inactive lanes (0 total score) redistribute to active lanes
+        IGameEngineExtended ge = IGameEngineExtended(address(gameEngine));
 
-        // Compute share: treasuryBalance × playerHoldScore / totalHoldScore
-        uint256 share = (result.treasuryBalance * uint256(playerHoldScore)) / result.totalHoldScore;
-        require(share > 0, "Share too small");
+        uint256 lanePool = result.treasuryBalance / 3;
+        uint8 activeLanes = 0;
+        for (uint8 i = 0; i < 3; i++) {
+            if (result.laneHoldScores[i] > 0) activeLanes++;
+        }
+        require(activeLanes > 0, "No hold score in season");
+
+        // Redistribution: inactive lanes' shares go to active lanes
+        uint256 redistribution = activeLanes < 3
+            ? (lanePool * (3 - activeLanes)) / activeLanes
+            : 0;
+
+        uint256 totalShare;
+        for (uint8 i = 0; i < 3; i++) {
+            if (result.laneHoldScores[i] == 0) continue;
+            uint128 playerLaneScore = ge.getPlayerLaneScore(seasonId, msg.sender, i);
+            if (playerLaneScore == 0) continue;
+            totalShare += ((lanePool + redistribution) * uint256(playerLaneScore)) / result.laneHoldScores[i];
+        }
+        require(totalShare > 0, "No contribution");
 
         // Mark claimed
         hasClaimed[seasonId][msg.sender] = true;
-        result.totalClaimed += share;
+        result.totalClaimed += totalShare;
 
         // Credit to pending rewards (player withdraws via withdraw())
-        pendingRewards[msg.sender] += share;
+        pendingRewards[msg.sender] += totalShare;
 
-        emit SeasonClaimed(seasonId, msg.sender, share);
+        emit SeasonClaimed(seasonId, msg.sender, totalShare);
     }
 
     // ═══════════════════════════════════════════
@@ -651,6 +671,7 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
 /// @dev Extended GameEngine interface for hold score queries.
 interface IGameEngineExtended is IGameEngine {
     function getPlayerHoldScore(uint256 seasonId, address player) external view returns (uint128);
+    function getPlayerLaneScore(uint256 seasonId, address player, uint8 laneId) external view returns (uint128);
 }
 
 /// @dev Minimal Chainlink VRF v2 Coordinator interface.

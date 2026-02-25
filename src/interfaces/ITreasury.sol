@@ -83,7 +83,8 @@ interface ITreasury {
     function finalizeSeason(
         uint256 seasonId,
         uint256 totalHoldScore,
-        uint8 winnerFaction
+        uint8 winnerFaction,
+        uint256[3] calldata laneHoldScores
     ) external;
 
     /// @notice Player claims their share of the season treasury after it ends.
