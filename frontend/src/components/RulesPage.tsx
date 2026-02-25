@@ -197,7 +197,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded px-3 py-1.5 flex justify-between" style={{ backgroundColor: "var(--panel-bg)" }}>
       <span style={{ color: "var(--text-secondary)" }}>{label}</span>
-      <span className="text-yellow-400 font-bold">{value}</span>
+      <span className="font-bold" style={{ color: "var(--accent-yellow)" }}>{value}</span>
     </div>
   );
 }

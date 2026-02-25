@@ -53,7 +53,7 @@ export default function BattleLog({ battles }: { battles: BattleRecord[] }) {
                 <span style={{ color: "var(--text-secondary)" }}>
                   {b.totalSurvivors} survived
                 </span>
-                <span className="text-yellow-400 font-semibold">
+                <span className="font-semibold" style={{ color: "var(--accent-yellow)" }}>
                   💰 {formatUSDC(totalPot)}
                 </span>
               </div>

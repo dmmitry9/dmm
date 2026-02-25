@@ -59,9 +59,7 @@ export default function SeasonInfo({
         </div>
         <div>
           <span className="block text-xs" style={{ color: "var(--text-muted)" }}>Status</span>
-          <span
-            className={`font-bold ${seasonActive ? "text-green-400" : "text-red-400"}`}
-          >
+          <span className="font-bold" style={{ color: seasonActive ? "var(--accent-green)" : "var(--accent-red)" }}>
             {seasonActive ? "🟢 Active" : "🔴 Inactive"}
           </span>
         </div>
@@ -82,10 +80,10 @@ export default function SeasonInfo({
       </div>
 
       {/* Treasury Breakdown */}
-      <div className="p-3 rounded-lg bg-yellow-900/20 border border-yellow-800/40 space-y-2">
+      <div className="p-3 rounded-lg space-y-2" style={{ backgroundColor: "var(--treasury-bg)", border: "1px solid var(--treasury-border)" }}>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-yellow-500 font-bold">💰 Treasury</span>
-          <span className="font-mono text-xs text-yellow-400">
+          <span className="text-xs font-bold" style={{ color: "var(--accent-yellow-bold)" }}>💰 Treasury</span>
+          <span className="font-mono text-xs" style={{ color: "var(--accent-yellow)" }}>
             Season Pool: {formatUSDC(treasuryBreakdown.seasonTreasury)}
           </span>
         </div>
@@ -103,9 +101,9 @@ export default function SeasonInfo({
               </span>
             </div>
           ))}
-          <div className="flex items-center justify-between text-xs border-t border-yellow-800/30 pt-1">
-            <span className="text-yellow-500">Total Kill Pot</span>
-            <span className="font-mono font-bold text-yellow-400">{formatUSDC(totalKillPot)}</span>
+          <div className="flex items-center justify-between text-xs pt-1" style={{ borderTop: "1px solid var(--treasury-divider)" }}>
+            <span style={{ color: "var(--accent-yellow-bold)" }}>Total Kill Pot</span>
+            <span className="font-mono font-bold" style={{ color: "var(--accent-yellow)" }}>{formatUSDC(totalKillPot)}</span>
           </div>
         </div>
       </div>
@@ -119,7 +117,7 @@ export default function SeasonInfo({
           </span>
         </div>
         {weather > 0 && (
-          <div className="text-xs text-yellow-400">
+          <div className="text-xs" style={{ color: "var(--accent-yellow)" }}>
             {WEATHER_BONUS_UNIT[weather]}
           </div>
         )}
@@ -129,7 +127,7 @@ export default function SeasonInfo({
       {specialEvent > 0 && (
         <div className="p-3 rounded-lg bg-purple-900/30 border border-purple-800 space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-purple-400">Active Event</span>
+            <span className="text-xs" style={{ color: "var(--accent-purple)" }}>Active Event</span>
             <span className="text-sm">
               {EVENT_EMOJI[specialEvent]} {EVENT_LABELS[specialEvent]}
             </span>
@@ -151,7 +149,7 @@ export default function SeasonInfo({
           </div>
           <div className="flex items-center justify-between text-sm">
             <span style={{ color: "var(--text-muted)" }}>Pending Rewards</span>
-            <span className="font-mono text-green-400">
+            <span className="font-mono" style={{ color: pendingRewards && pendingRewards > 0n ? "var(--accent-green)" : "var(--text-muted)" }}>
               {pendingRewards !== undefined && pendingRewards > 0n
                 ? formatUSDC(pendingRewards)
                 : "$0.00"}

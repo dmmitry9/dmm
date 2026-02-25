@@ -60,7 +60,7 @@ function SquadLine({ s }: { s: SegmentSquad }) {
     <span className={`text-[9px] ${colorClass} font-bold leading-tight`}>
       {factionEmoji}{s.effectiveUnits}{UNIT_EMOJI[s.unitType] || ""}
       {showTimer && (
-        <span className="text-yellow-400 ml-0.5">⏳{formatTimeRemaining(s.arrivalTime)}</span>
+        <span className="ml-0.5" style={{ color: "var(--accent-yellow)" }}>⏳{formatTimeRemaining(s.arrivalTime)}</span>
       )}
     </span>
   );

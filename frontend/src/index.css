@@ -16,6 +16,14 @@
   --btn-inactive-bg: #374151;
   --btn-inactive-text: #9ca3af;
   --panel-bg: rgba(55, 65, 81, 0.5);
+  --accent-yellow: #facc15;
+  --accent-yellow-bold: #eab308;
+  --accent-green: #4ade80;
+  --accent-red: #f87171;
+  --accent-purple: #c084fc;
+  --treasury-bg: rgba(120, 53, 15, 0.2);
+  --treasury-border: rgba(146, 64, 14, 0.4);
+  --treasury-divider: rgba(146, 64, 14, 0.3);
 }
 
 [data-theme="light"] {
@@ -31,6 +39,14 @@
   --btn-inactive-bg: #d5cfc4;
   --btn-inactive-text: #4a5568;
   --panel-bg: rgba(197, 191, 179, 0.5);
+  --accent-yellow: #b45309;
+  --accent-yellow-bold: #92400e;
+  --accent-green: #15803d;
+  --accent-red: #dc2626;
+  --accent-purple: #7c3aed;
+  --treasury-bg: rgba(180, 83, 9, 0.12);
+  --treasury-border: rgba(180, 83, 9, 0.3);
+  --treasury-divider: rgba(180, 83, 9, 0.25);
 }
 
 @layer base {
