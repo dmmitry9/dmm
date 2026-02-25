@@ -54,17 +54,19 @@ function TotalLine({ squads }: { squads: SegmentSquad[] }) {
 function SquadLine({ s }: { s: SegmentSquad }) {
   const factionEmoji = s.faction === FACTION.PEPE ? "🐸" : "🐕";
   const colorClass = s.faction === FACTION.PEPE ? "text-pepe" : "text-shib";
+  const now = Math.floor(Date.now() / 1000);
+  const showTimer = s.isMarching && s.arrivalTime > now;
   return (
     <span className={`text-[9px] ${colorClass} font-bold leading-tight`}>
       {factionEmoji}{s.effectiveUnits}{UNIT_EMOJI[s.unitType] || ""}
-      {s.isMarching && (
+      {showTimer && (
         <span className="text-yellow-400 ml-0.5">⏳{formatTimeRemaining(s.arrivalTime)}</span>
       )}
     </span>
   );
 }
 
-function SquadBadge({ squads }: { squads: SegmentSquad[] }) {
+function SquadBadge({ squads, showTotal = true }: { squads: SegmentSquad[]; showTotal?: boolean }) {
   if (squads.length === 0) return null;
 
   const sorted = [...squads].sort((a, b) => a.arrivalTime - b.arrivalTime);
@@ -72,12 +74,12 @@ function SquadBadge({ squads }: { squads: SegmentSquad[] }) {
 
   return (
     <div className="flex flex-col items-center gap-px w-full">
-      <TotalLine squads={squads} />
+      {showTotal && <TotalLine squads={squads} />}
       {visible.map((s) => (
         <SquadLine key={s.squadId} s={s} />
       ))}
       {squads.length > 5 && (
-        <span className="text-[8px] text-gray-500">+{squads.length - 5} more</span>
+        <span className="text-[8px]" style={{ color: "var(--text-muted)" }}>+{squads.length - 5} more</span>
       )}
     </div>
   );
@@ -87,7 +89,7 @@ function SquadTooltip({ squads }: { squads: SegmentSquad[] }) {
   const sorted = [...squads].sort((a, b) => a.arrivalTime - b.arrivalTime).slice(0, 20);
 
   return (
-    <div className="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-1 bg-gray-900 border border-gray-600 rounded-lg px-2 py-1.5 shadow-xl min-w-[120px] pointer-events-none">
+    <div className="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-1 rounded-lg px-2 py-1.5 shadow-xl min-w-[120px] pointer-events-none" style={{ backgroundColor: "var(--game-card)", borderColor: "var(--game-border)", border: "1px solid var(--game-border)" }}>
       <TotalLine squads={squads} />
       <div className="flex flex-col items-center gap-px mt-0.5">
         {sorted.map((s) => (
@@ -113,7 +115,7 @@ function Segment({
   const isShibSide = index > BASTION_SEGMENT;
   const hasSquads = squads.length > 0;
 
-  let bgClass = "bg-gray-800";
+  let bgClass = "bg-game-card";
   if (isBastion) bgClass = "bg-bastion/30 bastion-glow";
   else if (isPepeSide) bgClass = "bg-pepe/10";
   else if (isShibSide) bgClass = "bg-shib/10";
@@ -137,7 +139,7 @@ function Segment({
     >
       {hasSquads ? (
         <>
-          <SquadBadge squads={squads} />
+          <SquadBadge squads={squads} showTotal={!isBastion} />
           {squads.length > 5 && (
             <div className="hidden group-hover:block">
               <SquadTooltip squads={squads} />
@@ -160,7 +162,7 @@ function ScoreBar({ pepe, shib }: { pepe: bigint; shib: bigint }) {
   const pepePct = total > 0 ? (Number(pepe) / total) * 100 : 50;
 
   return (
-    <div className="flex h-2 rounded-full overflow-hidden bg-gray-700">
+    <div className="flex h-2 rounded-full overflow-hidden" style={{ backgroundColor: "var(--score-bar-bg)" }}>
       <div
         className="bg-pepe transition-all duration-1000"
         style={{ width: `${pepePct}%` }}

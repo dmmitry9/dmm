@@ -18,7 +18,20 @@ import {
   usePendingRewards,
 } from "./hooks/useGameState";
 
+function useTheme() {
+  const [theme, setTheme] = useState<"dark" | "light">(
+    () => (localStorage.getItem("theme") as "dark" | "light") || "dark"
+  );
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+  const toggle = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
+  return { theme, toggle };
+}
+
 export default function App() {
+  const { theme, toggle: toggleTheme } = useTheme();
   const [showRules, setShowRules] = useState(window.location.hash === "#rules");
 
   useEffect(() => {
@@ -52,7 +65,7 @@ export default function App() {
   }));
 
   return (
-    <div className="min-h-screen bg-game-bg">
+    <div className="min-h-screen" style={{ backgroundColor: "var(--game-bg)", color: "var(--text-primary)" }}>
       {/* Header */}
       <header className="border-b border-game-border px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -69,7 +82,16 @@ export default function App() {
               </p>
             </div>
           </div>
-          <ConnectWallet />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleTheme}
+              className="text-xl hover:opacity-70 transition-opacity"
+              title={theme === "dark" ? "Switch to light" : "Switch to dark"}
+            >
+              {theme === "dark" ? "☀️" : "🌙"}
+            </button>
+            <ConnectWallet />
+          </div>
         </div>
       </header>
 

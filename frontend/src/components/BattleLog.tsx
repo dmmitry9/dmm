@@ -22,7 +22,7 @@ export default function BattleLog({ battles }: { battles: BattleRecord[] }) {
 
   return (
     <div className="card space-y-2">
-      <h3 className="text-sm font-bold text-gray-300">⚔️ Recent Battles</h3>
+      <h3 className="text-sm font-bold" style={{ color: "var(--text-secondary)" }}>⚔️ Recent Battles</h3>
       <div className="space-y-1.5">
         {battles.map((b, i) => {
           const isPepe = b.winner === FACTION.PEPE;
@@ -34,7 +34,8 @@ export default function BattleLog({ battles }: { battles: BattleRecord[] }) {
           return (
             <div
               key={`${b.blockNumber}-${b.laneId}-${i}`}
-              className="flex items-center justify-between bg-gray-800/50 rounded px-3 py-1.5 text-[11px]"
+              className="flex items-center justify-between rounded px-3 py-1.5 text-[11px]"
+              style={{ backgroundColor: "var(--game-bg)" }}
             >
               <div className="flex items-center gap-2">
                 <span className="text-gray-500 w-12 shrink-0">

@@ -8,10 +8,15 @@ export default {
         shib: { DEFAULT: "#FF9800", dark: "#4a2800", light: "#FFB74D" },
         bastion: "#8B5CF6",
         game: {
-          bg: "#0f172a",
-          card: "#1e293b",
-          border: "#334155",
+          bg: "var(--game-bg)",
+          card: "var(--game-card)",
+          border: "var(--game-border)",
         },
+      },
+      textColor: {
+        primary: "var(--text-primary)",
+        secondary: "var(--text-secondary)",
+        muted: "var(--text-muted)",
       },
     },
   },
