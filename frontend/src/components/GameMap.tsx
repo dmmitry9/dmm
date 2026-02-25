@@ -30,12 +30,12 @@ function TotalLine({ squads }: { squads: SegmentSquad[] }) {
   const shib = factionTotals(squads, FACTION.SHIB);
 
   return (
-    <div className="flex flex-col items-center gap-px border-b border-gray-700/50 pb-0.5 mb-0.5 w-full px-0.5">
+    <div className="flex flex-col items-center gap-px border-b pb-0.5 mb-0.5 w-full px-0.5" style={{ borderColor: "var(--game-border)" }}>
       {pepe.total > 0 && (
         <span className="text-[8px] text-pepe font-bold leading-tight">
           🐸{pepe.total}
           {pepe.byType.map((c, i) =>
-            c > 0 ? <span key={i} className="text-gray-400"> {c}{UNIT_EMOJI[UNIT_TYPES[i]]}</span> : null
+            c > 0 ? <span key={i} style={{ color: "var(--text-secondary)" }}> {c}{UNIT_EMOJI[UNIT_TYPES[i]]}</span> : null
           )}
         </span>
       )}
@@ -43,7 +43,7 @@ function TotalLine({ squads }: { squads: SegmentSquad[] }) {
         <span className="text-[8px] text-shib font-bold leading-tight">
           🐕{shib.total}
           {shib.byType.map((c, i) =>
-            c > 0 ? <span key={i} className="text-gray-400"> {c}{UNIT_EMOJI[UNIT_TYPES[i]]}</span> : null
+            c > 0 ? <span key={i} style={{ color: "var(--text-secondary)" }}> {c}{UNIT_EMOJI[UNIT_TYPES[i]]}</span> : null
           )}
         </span>
       )}
@@ -66,7 +66,7 @@ function SquadLine({ s }: { s: SegmentSquad }) {
   );
 }
 
-function SquadBadge({ squads, showTotal = true }: { squads: SegmentSquad[]; showTotal?: boolean }) {
+function SquadBadge({ squads }: { squads: SegmentSquad[] }) {
   if (squads.length === 0) return null;
 
   const sorted = [...squads].sort((a, b) => a.arrivalTime - b.arrivalTime);
@@ -74,7 +74,7 @@ function SquadBadge({ squads, showTotal = true }: { squads: SegmentSquad[]; show
 
   return (
     <div className="flex flex-col items-center gap-px w-full">
-      {showTotal && <TotalLine squads={squads} />}
+      <TotalLine squads={squads} />
       {visible.map((s) => (
         <SquadLine key={s.squadId} s={s} />
       ))}
@@ -96,7 +96,7 @@ function SquadTooltip({ squads }: { squads: SegmentSquad[] }) {
           <SquadLine key={s.squadId} s={s} />
         ))}
         {squads.length > 20 && (
-          <span className="text-[8px] text-gray-500">+{squads.length - 20} more</span>
+          <span className="text-[8px]" style={{ color: "var(--text-muted)" }}>+{squads.length - 20} more</span>
         )}
       </div>
     </div>
@@ -133,17 +133,23 @@ function Segment({
       className={`
         group relative flex items-center justify-center
         min-h-[5.5rem] rounded-lg border transition-all py-1
-        ${isBastion ? "border-bastion" : hasSquads ? "border-gray-500" : "border-game-border"}
+        ${isBastion ? "border-bastion" : hasSquads ? "border-game-border" : "border-game-border"}
         ${bgClass}
       `}
     >
       {hasSquads ? (
         <>
-          <SquadBadge squads={squads} showTotal={!isBastion} />
-          {squads.length > 5 && (
-            <div className="hidden group-hover:block">
-              <SquadTooltip squads={squads} />
-            </div>
+          {isBastion ? (
+            <TotalLine squads={squads} />
+          ) : (
+            <>
+              <SquadBadge squads={squads} />
+              {squads.length > 5 && (
+                <div className="hidden group-hover:block">
+                  <SquadTooltip squads={squads} />
+                </div>
+              )}
+            </>
           )}
         </>
       ) : (
@@ -188,7 +194,7 @@ function LaneRow({
 }) {
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs text-gray-400 px-1">
+      <div className="flex items-center justify-between text-xs px-1" style={{ color: "var(--text-secondary)" }}>
         <span>Lane {laneId + 1}</span>
         <span>
           🐸 {Number(pepeScore).toLocaleString()} — {Number(shibScore).toLocaleString()} 🐕
@@ -209,7 +215,7 @@ export default function GameMap({ lanes, laneSquads, weather, specialEvent }: Ga
     <div className="card space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">⚔️ Battlefield</h2>
-        <div className="flex items-center gap-3 text-xs text-gray-400">
+        <div className="flex items-center gap-3 text-xs" style={{ color: "var(--text-secondary)" }}>
           <span className="text-pepe font-bold">🐸 PEPE</span>
           <span>→ march →</span>
           <span className="text-bastion font-bold">🏰</span>

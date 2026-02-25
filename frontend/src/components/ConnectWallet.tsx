@@ -8,7 +8,7 @@ export default function ConnectWallet() {
   if (isConnected && address) {
     return (
       <div className="flex items-center gap-3">
-        <span className="text-sm text-gray-400 font-mono">
+        <span className="text-sm font-mono" style={{ color: "var(--text-secondary)" }}>
           {address.slice(0, 6)}...{address.slice(-4)}
         </span>
         <button onClick={() => disconnect()} className="btn-neutral text-xs">

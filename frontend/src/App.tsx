@@ -77,7 +77,7 @@ export default function App() {
                 {" vs "}
                 <span className="text-shib">SHIB</span>
               </h1>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                 Strategic Battle Arena on Base
               </p>
             </div>
@@ -121,9 +121,9 @@ export default function App() {
               emoji="🐕"
             />
             <div className="card text-center">
-              <span className="text-xs text-gray-500 block">RPS System</span>
+              <span className="text-xs block" style={{ color: "var(--text-muted)" }}>RPS System</span>
               <div className="text-lg mt-1">⚔️ &gt; 🔱 &gt; 🐴 &gt; ⚔️</div>
-              <span className="text-[10px] text-gray-600">1.5× advantage</span>
+              <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>1.5× advantage</span>
             </div>
           </div>
 
@@ -132,10 +132,10 @@ export default function App() {
           {/* Spectator notice */}
           {!address && (
             <div className="card text-center py-6 space-y-2">
-              <p className="text-gray-400">
+              <p style={{ color: "var(--text-secondary)" }}>
                 👀 You are watching as a spectator
               </p>
-              <p className="text-xs text-gray-600">
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                 Connect your wallet to deploy units and join the battle
               </p>
             </div>
@@ -174,8 +174,8 @@ export default function App() {
 
       {/* Rules */}
       <section className="max-w-7xl mx-auto px-6 pb-6">
-        <div className="card space-y-2 text-sm text-gray-300">
-          <h3 className="font-bold text-base text-gray-200">📜 How It Works</h3>
+        <div className="card space-y-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+          <h3 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>📜 How It Works</h3>
           <p>🐸 <span className="text-pepe font-semibold">PEPE</span> vs <span className="text-shib font-semibold">SHIB</span> 🐕 — pick a side and recruit units for USDC.</p>
           <p>3 lanes, 3 unit types: ⚔️ &gt; 🔱 &gt; 🐎 &gt; ⚔️ (1.5× RPS bonus).</p>
           <p>Units march to the enemy bastion 🏰 in 90 minutes.</p>
@@ -192,7 +192,7 @@ export default function App() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-game-border px-6 py-4 text-center text-xs text-gray-600">
+      <footer className="border-t border-game-border px-6 py-4 text-center text-xs" style={{ color: "var(--text-muted)" }}>
         PEPE vs SHIB Battle Arena — Built on Base L2 — USDC Economy
       </footer>
     </div>
@@ -212,7 +212,7 @@ function ForcesCard({
 }) {
   return (
     <div className="card text-center">
-      <span className="text-xs text-gray-500 block">{label}</span>
+      <span className="text-xs block" style={{ color: "var(--text-muted)" }}>{label}</span>
       <div className={`text-2xl font-bold text-${color} mt-1`}>
         {emoji} {count?.toString() ?? "0"}
       </div>

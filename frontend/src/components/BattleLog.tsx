@@ -15,7 +15,7 @@ export default function BattleLog({ battles }: { battles: BattleRecord[] }) {
   if (battles.length === 0) {
     return (
       <div className="card text-center py-4">
-        <span className="text-gray-500 text-sm">⚔️ No battles yet this season</span>
+        <span className="text-sm" style={{ color: "var(--text-muted)" }}>⚔️ No battles yet this season</span>
       </div>
     );
   }
@@ -38,10 +38,10 @@ export default function BattleLog({ battles }: { battles: BattleRecord[] }) {
               style={{ backgroundColor: "var(--game-bg)" }}
             >
               <div className="flex items-center gap-2">
-                <span className="text-gray-500 w-12 shrink-0">
+                <span className="w-12 shrink-0" style={{ color: "var(--text-muted)" }}>
                   {b.timestamp > 0 ? timeAgo(b.timestamp) : "—"}
                 </span>
-                <span className="text-gray-400">L{b.laneId + 1}</span>
+                <span style={{ color: "var(--text-secondary)" }}>L{b.laneId + 1}</span>
                 <span>
                   {winEmoji}
                   <span className={`${winColor} font-bold`}> WIN</span>
@@ -50,7 +50,7 @@ export default function BattleLog({ battles }: { battles: BattleRecord[] }) {
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-gray-400">
+                <span style={{ color: "var(--text-secondary)" }}>
                   {b.totalSurvivors} survived
                 </span>
                 <span className="text-yellow-400 font-semibold">

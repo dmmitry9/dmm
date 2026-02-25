@@ -87,7 +87,7 @@ export default function DeployPanel({
 
   if (!address) {
     return (
-      <div className="card text-center text-gray-500 py-8">
+      <div className="card text-center py-8" style={{ color: "var(--text-muted)" }}>
         Connect wallet to deploy units
       </div>
     );
@@ -95,7 +95,7 @@ export default function DeployPanel({
 
   if (!seasonActive) {
     return (
-      <div className="card text-center text-gray-500 py-8">
+      <div className="card text-center py-8" style={{ color: "var(--text-muted)" }}>
         No active season
       </div>
     );
@@ -107,14 +107,15 @@ export default function DeployPanel({
 
       {/* Faction */}
       <div>
-        <label className="text-xs text-gray-500 block mb-1">Faction</label>
+        <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Faction</label>
         <div className="flex gap-2">
           <button
             onClick={() => setFaction(FACTION.PEPE)}
             disabled={playerFaction > 0 && playerFaction !== FACTION.PEPE}
             className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all
-              ${activeFaction === FACTION.PEPE ? "bg-pepe text-white" : "bg-gray-800 text-gray-400"}
+              ${activeFaction === FACTION.PEPE ? "bg-pepe text-white" : ""}
               disabled:opacity-30`}
+            style={activeFaction !== FACTION.PEPE ? { backgroundColor: "var(--btn-inactive-bg)", color: "var(--btn-inactive-text)" } : undefined}
           >
             🐸 PEPE
           </button>
@@ -122,14 +123,15 @@ export default function DeployPanel({
             onClick={() => setFaction(FACTION.SHIB)}
             disabled={playerFaction > 0 && playerFaction !== FACTION.SHIB}
             className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all
-              ${activeFaction === FACTION.SHIB ? "bg-shib text-white" : "bg-gray-800 text-gray-400"}
+              ${activeFaction === FACTION.SHIB ? "bg-shib text-white" : ""}
               disabled:opacity-30`}
+            style={activeFaction !== FACTION.SHIB ? { backgroundColor: "var(--btn-inactive-bg)", color: "var(--btn-inactive-text)" } : undefined}
           >
             🐕 SHIB
           </button>
         </div>
         {playerFaction > 0 && (
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
             Faction locked for this season
           </p>
         )}
@@ -137,8 +139,8 @@ export default function DeployPanel({
 
       {/* Unit Type */}
       <div>
-        <label className="text-xs text-gray-500 block mb-1">
-          Unit Type <span className="text-gray-600">({RPS_CHART})</span>
+        <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>
+          Unit Type <span style={{ color: "var(--text-muted)" }}>({RPS_CHART})</span>
         </label>
         <div className="grid grid-cols-3 gap-2">
           {[UNIT_TYPE.SWORDSMAN, UNIT_TYPE.SPEARMAN, UNIT_TYPE.CAVALRY].map(
@@ -147,7 +149,8 @@ export default function DeployPanel({
                 key={ut}
                 onClick={() => setUnitType(ut)}
                 className={`py-2 rounded-lg text-sm transition-all
-                ${unitType === ut ? "bg-indigo-600 text-white" : "bg-gray-800 text-gray-400"}`}
+                ${unitType === ut ? "bg-indigo-600 text-white" : ""}`}
+                style={unitType !== ut ? { backgroundColor: "var(--btn-inactive-bg)", color: "var(--btn-inactive-text)" } : undefined}
               >
                 {UNIT_EMOJI[ut]} {UNIT_LABELS[ut]}
               </button>
@@ -158,14 +161,15 @@ export default function DeployPanel({
 
       {/* Lane */}
       <div>
-        <label className="text-xs text-gray-500 block mb-1">Lane</label>
+        <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Lane</label>
         <div className="grid grid-cols-3 gap-2">
           {[0, 1, 2].map((l) => (
             <button
               key={l}
               onClick={() => setLaneId(l)}
               className={`py-2 rounded-lg text-sm transition-all
-                ${laneId === l ? "bg-bastion text-white" : "bg-gray-800 text-gray-400"}`}
+                ${laneId === l ? "bg-bastion text-white" : ""}`}
+              style={laneId !== l ? { backgroundColor: "var(--btn-inactive-bg)", color: "var(--btn-inactive-text)" } : undefined}
             >
               Lane {l + 1}
             </button>
@@ -175,19 +179,20 @@ export default function DeployPanel({
 
       {/* Count */}
       <div>
-        <label className="text-xs text-gray-500 block mb-1">Count</label>
+        <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Count</label>
         <input
           type="number"
           value={count}
           onChange={(e) => setCount(Math.max(1, Number(e.target.value)))}
           min={1}
-          className="w-full bg-gray-800 border border-game-border rounded-lg px-3 py-2 text-sm font-mono"
+          className="w-full border border-game-border rounded-lg px-3 py-2 text-sm font-mono"
+          style={{ backgroundColor: "var(--input-bg)", color: "var(--text-primary)" }}
         />
       </div>
 
       {/* Price preview */}
-      <div className="p-3 rounded-lg bg-gray-800/50 flex justify-between items-center">
-        <span className="text-sm text-gray-400">Estimated Cost</span>
+      <div className="p-3 rounded-lg flex justify-between items-center" style={{ backgroundColor: "var(--panel-bg)" }}>
+        <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Estimated Cost</span>
         <span className="font-mono font-bold text-lg">
           {price ? formatUSDC(price) : "—"}
         </span>

@@ -1,6 +1,6 @@
 export default function RulesPage({ onBack }: { onBack: () => void }) {
   return (
-    <div className="min-h-screen bg-game-bg">
+    <div className="min-h-screen" style={{ backgroundColor: "var(--game-bg)", color: "var(--text-primary)" }}>
       <header className="border-b border-game-border px-6 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <h1 className="text-xl font-bold">
@@ -9,14 +9,15 @@ export default function RulesPage({ onBack }: { onBack: () => void }) {
           </h1>
           <button
             onClick={onBack}
-            className="text-sm text-gray-400 hover:text-white transition-colors"
+            className="text-sm hover:opacity-70 transition-opacity"
+            style={{ color: "var(--text-secondary)" }}
           >
             ← Back to Game
           </button>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-8 space-y-8 text-gray-300 text-sm leading-relaxed">
+      <main className="max-w-4xl mx-auto px-6 py-8 space-y-8 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
         {/* Overview */}
         <Section title="🎮 Overview">
           <p>
@@ -52,11 +53,11 @@ export default function RulesPage({ onBack }: { onBack: () => void }) {
         <Section title="🗡️ Unit Types — Rock-Paper-Scissors">
           <div className="flex items-center gap-2 text-lg mb-3 font-bold">
             <span>⚔️ Swordsman</span>
-            <span className="text-gray-500">&gt;</span>
+            <span style={{ color: "var(--text-muted)" }}>&gt;</span>
             <span>🔱 Spearman</span>
-            <span className="text-gray-500">&gt;</span>
+            <span style={{ color: "var(--text-muted)" }}>&gt;</span>
             <span>🐎 Cavalry</span>
-            <span className="text-gray-500">&gt;</span>
+            <span style={{ color: "var(--text-muted)" }}>&gt;</span>
             <span>⚔️ Swordsman</span>
           </div>
           <ul className="list-disc pl-5 space-y-1">
@@ -83,7 +84,7 @@ export default function RulesPage({ onBack }: { onBack: () => void }) {
             <li>🌾 <B>Harvest</B> — Attrition decay rate is <B>halved</B> (units last longer).</li>
             <li>🌑 <B>Eclipse</B> — RPS advantage is <B>neutralized</B> (all units fight at equal multiplier).</li>
           </ul>
-          <p className="text-gray-500 mt-1">25% chance for each event type, 25% chance for no event.</p>
+          <p className="mt-1" style={{ color: "var(--text-muted)" }}>25% chance for each event type, 25% chance for no event.</p>
         </Section>
 
         {/* Attrition */}
@@ -182,20 +183,20 @@ export default function RulesPage({ onBack }: { onBack: () => void }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="card space-y-2">
-      <h2 className="text-base font-bold text-gray-100">{title}</h2>
+      <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>{title}</h2>
       {children}
     </div>
   );
 }
 
 function B({ children }: { children: React.ReactNode }) {
-  return <span className="text-white font-semibold">{children}</span>;
+  return <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{children}</span>;
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-gray-800/50 rounded px-3 py-1.5 flex justify-between">
-      <span className="text-gray-400">{label}</span>
+    <div className="rounded px-3 py-1.5 flex justify-between" style={{ backgroundColor: "var(--panel-bg)" }}>
+      <span style={{ color: "var(--text-secondary)" }}>{label}</span>
       <span className="text-yellow-400 font-bold">{value}</span>
     </div>
   );

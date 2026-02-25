@@ -52,13 +52,13 @@ export default function SeasonInfo({
 
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div>
-          <span className="text-gray-500 block text-xs">Season</span>
+          <span className="block text-xs" style={{ color: "var(--text-muted)" }}>Season</span>
           <span className="font-bold text-lg">
             #{seasonId?.toString() ?? "—"}
           </span>
         </div>
         <div>
-          <span className="text-gray-500 block text-xs">Status</span>
+          <span className="block text-xs" style={{ color: "var(--text-muted)" }}>Status</span>
           <span
             className={`font-bold ${seasonActive ? "text-green-400" : "text-red-400"}`}
           >
@@ -66,13 +66,13 @@ export default function SeasonInfo({
           </span>
         </div>
         <div>
-          <span className="text-gray-500 block text-xs">Time Left</span>
+          <span className="block text-xs" style={{ color: "var(--text-muted)" }}>Time Left</span>
           <span className="font-mono">
             {seasonEnd > 0 ? formatTimeRemaining(seasonEnd) : "—"}
           </span>
         </div>
         <div>
-          <span className="text-gray-500 block text-xs">Forces</span>
+          <span className="block text-xs" style={{ color: "var(--text-muted)" }}>Forces</span>
           <span>
             <span className="text-pepe">{totalPEPE?.toString() ?? "0"}</span>
             {" vs "}
@@ -92,10 +92,10 @@ export default function SeasonInfo({
 
         {/* Kill Pots per lane */}
         <div className="space-y-1">
-          <span className="text-[10px] text-gray-500 uppercase tracking-wider">Kill Pots</span>
+          <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Kill Pots</span>
           {treasuryBreakdown.killPots.map((lp, i) => (
             <div key={i} className="flex items-center justify-between text-xs">
-              <span className="text-gray-400">Lane {i + 1}</span>
+              <span style={{ color: "var(--text-secondary)" }}>Lane {i + 1}</span>
               <span className="font-mono">
                 <span className="text-pepe">🐸{formatUSDC(lp.pepe)}</span>
                 {" / "}
@@ -111,9 +111,9 @@ export default function SeasonInfo({
       </div>
 
       {/* Weather */}
-      <div className="p-3 rounded-lg bg-gray-800/50 space-y-1">
+      <div className="p-3 rounded-lg space-y-1" style={{ backgroundColor: "var(--panel-bg)" }}>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500">Weather</span>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>Weather</span>
           <span className="text-sm">
             {WEATHER_EMOJI[weather]} {WEATHER_LABELS[weather]}
           </span>
@@ -134,7 +134,7 @@ export default function SeasonInfo({
               {EVENT_EMOJI[specialEvent]} {EVENT_LABELS[specialEvent]}
             </span>
           </div>
-          <div className="text-xs text-gray-400">
+          <div className="text-xs" style={{ color: "var(--text-secondary)" }}>
             Ends: {formatTimeRemaining(specialEventEndsAt)}
           </div>
         </div>
@@ -144,13 +144,13 @@ export default function SeasonInfo({
       {(usdcBalance !== undefined || pendingRewards !== undefined) && (
         <div className="border-t border-game-border pt-3 space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">USDC Balance</span>
+            <span style={{ color: "var(--text-muted)" }}>USDC Balance</span>
             <span className="font-mono">
               {usdcBalance !== undefined ? formatUSDC(usdcBalance) : "—"}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Pending Rewards</span>
+            <span style={{ color: "var(--text-muted)" }}>Pending Rewards</span>
             <span className="font-mono text-green-400">
               {pendingRewards !== undefined && pendingRewards > 0n
                 ? formatUSDC(pendingRewards)

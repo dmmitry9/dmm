@@ -24,8 +24,8 @@ export default function RewardsPanel({ pendingRewards, seasonId }: RewardsPanelP
       <h2 className="text-lg font-bold">💰 Rewards</h2>
 
       <div className="flex items-center justify-between">
-        <span className="text-gray-400 text-sm">Pending</span>
-        <span className={`font-mono font-bold ${hasPending ? "text-green-400" : "text-gray-500"}`}>
+        <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Pending</span>
+        <span className="font-mono font-bold" style={{ color: hasPending ? "#4ade80" : "var(--text-muted)" }}>
           {pendingRewards !== undefined ? formatUSDC(pendingRewards) : "$0.00"}
         </span>
       </div>
