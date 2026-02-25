@@ -41,7 +41,7 @@ export const UNIT_LABELS: Record<number, string> = {
 
 export const UNIT_EMOJI: Record<number, string> = {
   [UNIT_TYPE.SWORDSMAN]: "\u2694\uFE0F",
-  [UNIT_TYPE.SPEARMAN]: "\uD83C\uDFF9",
+  [UNIT_TYPE.SPEARMAN]: "\uD83D\uDD31",
   [UNIT_TYPE.CAVALRY]: "\uD83D\uDC0E",
 };
 
@@ -85,7 +85,7 @@ export const FACTION_LABELS: Record<number, string> = {
 };
 
 // RPS display
-export const RPS_CHART = "\u2694\uFE0F > \uD83C\uDFF9 > \uD83D\uDC0E > \u2694\uFE0F";
+export const RPS_CHART = "\u2694\uFE0F > \uD83D\uDD31 > \uD83D\uDC0E > \u2694\uFE0F";
 
 export function formatUSDC(amount: bigint): string {
   const dollars = Number(amount) / 1_000_000;
