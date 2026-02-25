@@ -402,14 +402,24 @@ export function useBattleHistory(): BattleRecord[] {
 
     try {
       const currentBlock = await client.getBlockNumber();
-      const fromBlock = currentBlock > 50000n ? currentBlock - 50000n : 0n;
 
-      const logs = await client.getLogs({
-        address: ADDRESSES.gameEngine,
-        event: BATTLE_EVENT,
-        fromBlock,
-        toBlock: "latest",
-      });
+      // Try progressively smaller block ranges (public RPCs may limit getLogs range)
+      const ranges = [10000n, 2000n, 500n];
+      let logs: Awaited<ReturnType<typeof client.getLogs<typeof BATTLE_EVENT>>> = [];
+      for (const range of ranges) {
+        const fromBlock = currentBlock > range ? currentBlock - range : 0n;
+        try {
+          logs = await client.getLogs({
+            address: ADDRESSES.gameEngine,
+            event: BATTLE_EVENT,
+            fromBlock,
+            toBlock: "latest",
+          });
+          break;
+        } catch {
+          continue;
+        }
+      }
 
       if (logs.length === 0) {
         setBattles([]);
@@ -421,8 +431,12 @@ export function useBattleHistory(): BattleRecord[] {
       const blockMap = new Map<bigint, number>();
       await Promise.all(
         uniqueBlocks.map(async (bn) => {
-          const block = await client.getBlock({ blockNumber: bn });
-          blockMap.set(bn, Number(block.timestamp));
+          try {
+            const block = await client.getBlock({ blockNumber: bn });
+            blockMap.set(bn, Number(block.timestamp));
+          } catch {
+            // Skip timestamp if block fetch fails
+          }
         })
       );
 
@@ -440,14 +454,14 @@ export function useBattleHistory(): BattleRecord[] {
         .slice(0, 10);
 
       setBattles(records);
-    } catch {
-      // getLogs may fail on some RPCs; silently ignore
+    } catch (err) {
+      console.error("Battle history fetch failed:", err);
     }
   }, [client]);
 
   useEffect(() => {
     fetchBattles();
-    const interval = setInterval(fetchBattles, 30_000);
+    const interval = setInterval(fetchBattles, 15_000);
     return () => clearInterval(interval);
   }, [fetchBattles]);
 
