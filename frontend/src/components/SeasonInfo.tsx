@@ -20,6 +20,7 @@ interface SeasonInfoProps {
   specialEventEndsAt: number;
   pendingRewards: bigint | undefined;
   usdcBalance: bigint | undefined;
+  treasuryBalance: bigint | undefined;
 }
 
 export default function SeasonInfo({
@@ -33,6 +34,7 @@ export default function SeasonInfo({
   specialEventEndsAt,
   pendingRewards,
   usdcBalance,
+  treasuryBalance,
 }: SeasonInfoProps) {
   const seasonEnd = seasonStartTime
     ? Number(seasonStartTime) + SEASON_DURATION
@@ -69,6 +71,16 @@ export default function SeasonInfo({
             <span className="text-pepe">{totalPEPE?.toString() ?? "0"}</span>
             {" vs "}
             <span className="text-shib">{totalSHIB?.toString() ?? "0"}</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Treasury */}
+      <div className="p-3 rounded-lg bg-yellow-900/20 border border-yellow-800/40">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-yellow-500">Treasury Balance</span>
+          <span className="font-mono font-bold text-yellow-400">
+            {treasuryBalance !== undefined ? formatUSDC(treasuryBalance) : "—"}
           </span>
         </div>
       </div>

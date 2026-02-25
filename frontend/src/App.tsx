@@ -1,4 +1,5 @@
 import { useAccount } from "wagmi";
+import { ADDRESSES } from "./config/contracts";
 import ConnectWallet from "./components/ConnectWallet";
 import GameMap from "./components/GameMap";
 import SeasonInfo from "./components/SeasonInfo";
@@ -18,6 +19,7 @@ export default function App() {
   const { lanes } = useLaneScores();
   const laneSquads = useLaneSquads();
   const usdcBalance = useUSDCBalance(address);
+  const treasuryBalance = useUSDCBalance(ADDRESSES.treasury);
   const pendingRewards = usePendingRewards(address);
 
   const laneData = lanes.map((l) => ({
@@ -105,6 +107,7 @@ export default function App() {
             specialEventEndsAt={gameState.specialEventEndsAt}
             pendingRewards={pendingRewards}
             usdcBalance={usdcBalance}
+            treasuryBalance={treasuryBalance}
           />
 
           <DeployPanel
