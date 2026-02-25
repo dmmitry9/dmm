@@ -8,6 +8,7 @@ import DeployPanel from "./components/DeployPanel";
 import RewardsPanel from "./components/RewardsPanel";
 import RulesPage from "./components/RulesPage";
 import BattleLog from "./components/BattleLog";
+import { FACTION } from "./lib/constants";
 import {
   useGameState,
   useLaneScores,
@@ -63,6 +64,14 @@ export default function App() {
     pepeScore: l.pepe,
     shibScore: l.shib,
   }));
+
+  // Compute effective unit totals from squad data (not stale contract counters)
+  const effectivePEPE = laneSquads.flat(2)
+    .filter(s => s.faction === FACTION.PEPE)
+    .reduce((sum, s) => sum + s.effectiveUnits, 0);
+  const effectiveSHIB = laneSquads.flat(2)
+    .filter(s => s.faction === FACTION.SHIB)
+    .reduce((sum, s) => sum + s.effectiveUnits, 0);
 
   // Resolve battle
   const [resolvingLane, setResolvingLane] = useState<number | null>(null);
@@ -154,13 +163,13 @@ export default function App() {
           <div className="grid grid-cols-3 gap-3">
             <ForcesCard
               label="PEPE Forces"
-              count={gameState.totalPEPE}
+              count={effectivePEPE}
               color="pepe"
               emoji="🐸"
             />
             <ForcesCard
               label="SHIB Forces"
-              count={gameState.totalSHIB}
+              count={effectiveSHIB}
               color="shib"
               emoji="🐕"
             />
@@ -250,7 +259,7 @@ function ForcesCard({
   emoji,
 }: {
   label: string;
-  count: bigint | undefined;
+  count: number;
   color: string;
   emoji: string;
 }) {
@@ -258,7 +267,7 @@ function ForcesCard({
     <div className="card text-center">
       <span className="text-xs block" style={{ color: "var(--text-muted)" }}>{label}</span>
       <div className={`text-2xl font-bold text-${color} mt-1`}>
-        {emoji} {count?.toString() ?? "0"}
+        {emoji} {count}
       </div>
     </div>
   );

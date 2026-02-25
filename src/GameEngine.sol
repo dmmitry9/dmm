@@ -352,6 +352,24 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
 
         uint8 laneId = s.laneId;
 
+        // Zombie check: if attrition reduced to 0, clean up instead of arriving
+        uint256 eff = _getEffectiveUnitsFromRef(s);
+        if (eff == 0) {
+            uint256 attritionPot = (uint256(s.costPaid) * SPLIT_KILL_REWARD) / BPS_DENOM;
+            s.active = false;
+            _removeFromArray(marchingSquads[laneId], squadId);
+            if (s.faction == Faction.PEPE) {
+                if (s.initialCount <= totalUnitsPEPE) totalUnitsPEPE -= s.initialCount;
+                else totalUnitsPEPE = 0;
+            } else {
+                if (s.initialCount <= totalUnitsSHIB) totalUnitsSHIB -= s.initialCount;
+                else totalUnitsSHIB = 0;
+            }
+            treasury.transferAttritionPotToTreasury(laneId, uint8(s.faction), attritionPot);
+            emit ZombieCleaned(squadId, attritionPot);
+            return;
+        }
+
         // Step 1: Update hold score BEFORE modifying bastion composition
         _updateHoldScore(laneId);
 
@@ -426,6 +444,44 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     function refreshHoldScore(uint8 laneId) external {
         require(laneId < NUM_LANES, "Invalid lane");
         _updateHoldScore(laneId);
+    }
+
+    /// @notice Permissionless: clean zombie marching squads for a lane.
+    /// @param laneId Lane to clean (0–2).
+    function cleanupMarchingZombies(uint8 laneId) external {
+        require(laneId < NUM_LANES, "Invalid lane");
+        uint256[] storage ids = marchingSquads[laneId];
+        uint256 i = 0;
+        uint256 len = ids.length;
+        while (i < len) {
+            uint256 sid = ids[i];
+            Squad storage s = squads[sid];
+            if (!s.active || s.seasonId != currentSeasonId) {
+                ids[i] = ids[len - 1];
+                ids.pop();
+                unchecked { --len; }
+                continue;
+            }
+            uint256 eff = _getEffectiveUnitsFromRef(s);
+            if (eff == 0) {
+                uint256 attritionPot = (uint256(s.costPaid) * SPLIT_KILL_REWARD) / BPS_DENOM;
+                s.active = false;
+                if (s.faction == Faction.PEPE) {
+                    if (s.initialCount <= totalUnitsPEPE) totalUnitsPEPE -= s.initialCount;
+                    else totalUnitsPEPE = 0;
+                } else {
+                    if (s.initialCount <= totalUnitsSHIB) totalUnitsSHIB -= s.initialCount;
+                    else totalUnitsSHIB = 0;
+                }
+                treasury.transferAttritionPotToTreasury(laneId, uint8(s.faction), attritionPot);
+                emit ZombieCleaned(sid, attritionPot);
+                ids[i] = ids[len - 1];
+                ids.pop();
+                unchecked { --len; }
+                continue;
+            }
+            unchecked { ++i; }
+        }
     }
 
     // ═══════════════════════════════════════════
