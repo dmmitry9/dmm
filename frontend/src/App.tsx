@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { ADDRESSES } from "./config/contracts";
 import ConnectWallet from "./components/ConnectWallet";
@@ -5,6 +6,7 @@ import GameMap from "./components/GameMap";
 import SeasonInfo from "./components/SeasonInfo";
 import DeployPanel from "./components/DeployPanel";
 import RewardsPanel from "./components/RewardsPanel";
+import RulesPage from "./components/RulesPage";
 import {
   useGameState,
   useLaneScores,
@@ -15,6 +17,24 @@ import {
 } from "./hooks/useGameState";
 
 export default function App() {
+  const [showRules, setShowRules] = useState(window.location.hash === "#rules");
+
+  useEffect(() => {
+    const onHash = () => setShowRules(window.location.hash === "#rules");
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  if (showRules) {
+    return (
+      <RulesPage
+        onBack={() => {
+          window.location.hash = "";
+          setShowRules(false);
+        }}
+      />
+    );
+  }
   const { address } = useAccount();
   const gameState = useGameState();
   const { lanes } = useLaneScores();
@@ -135,6 +155,12 @@ export default function App() {
           <p>💰 70% of recruits → kill pot: win battles — claim the enemy&apos;s USDC.</p>
           <p>🏦 Hold the bastion — farm USDC every minute.</p>
           <p>🏆 Top 3 players of the winning faction receive a Season NFT at the end of each season (7 days).</p>
+          <a
+            href="#rules"
+            className="inline-block mt-2 text-pepe hover:text-pepe/80 font-semibold transition-colors"
+          >
+            📖 Full Rules & Mechanics →
+          </a>
         </div>
       </section>
 
