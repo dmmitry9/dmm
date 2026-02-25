@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useReadContract, useReadContracts, usePublicClient } from "wagmi";
+import { parseAbiItem } from "viem";
 import { ADDRESSES, GAME_ENGINE_ABI, TREASURY_ABI, ERC20_ABI } from "../config/contracts";
 import { NUM_LANES } from "../lib/constants";
 
@@ -375,4 +376,80 @@ export function useLaneSquads(): LaneSquads {
   }, [fetchSquads]);
 
   return laneSquads;
+}
+
+// ── Battle history from BattleResolved events ──
+export interface BattleRecord {
+  laneId: number;
+  winner: number;
+  totalSurvivors: number;
+  winnerPot: bigint;
+  loserEarned: bigint;
+  timestamp: number;
+  blockNumber: bigint;
+}
+
+const BATTLE_EVENT = parseAbiItem(
+  "event BattleResolved(uint8 indexed laneId, uint8 winner, uint256 totalSurvivors, uint256 winnerPot, uint256 loserEarned)"
+);
+
+export function useBattleHistory(): BattleRecord[] {
+  const client = usePublicClient();
+  const [battles, setBattles] = useState<BattleRecord[]>([]);
+
+  const fetchBattles = useCallback(async () => {
+    if (!client) return;
+
+    try {
+      const currentBlock = await client.getBlockNumber();
+      const fromBlock = currentBlock > 50000n ? currentBlock - 50000n : 0n;
+
+      const logs = await client.getLogs({
+        address: ADDRESSES.gameEngine,
+        event: BATTLE_EVENT,
+        fromBlock,
+        toBlock: "latest",
+      });
+
+      if (logs.length === 0) {
+        setBattles([]);
+        return;
+      }
+
+      // Get unique block numbers for timestamps
+      const uniqueBlocks = [...new Set(logs.map((l) => l.blockNumber))];
+      const blockMap = new Map<bigint, number>();
+      await Promise.all(
+        uniqueBlocks.map(async (bn) => {
+          const block = await client.getBlock({ blockNumber: bn });
+          blockMap.set(bn, Number(block.timestamp));
+        })
+      );
+
+      const records: BattleRecord[] = logs
+        .map((log) => ({
+          laneId: Number(log.args.laneId ?? 0),
+          winner: Number(log.args.winner ?? 0),
+          totalSurvivors: Number(log.args.totalSurvivors ?? 0),
+          winnerPot: log.args.winnerPot ?? 0n,
+          loserEarned: log.args.loserEarned ?? 0n,
+          timestamp: blockMap.get(log.blockNumber) ?? 0,
+          blockNumber: log.blockNumber,
+        }))
+        .sort((a, b) => Number(b.blockNumber - a.blockNumber))
+        .slice(0, 10);
+
+      setBattles(records);
+    } catch {
+      // getLogs may fail on some RPCs; silently ignore
+    }
+  }, [client]);
+
+  useEffect(() => {
+    fetchBattles();
+    const interval = setInterval(fetchBattles, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchBattles]);
+
+  return battles;
 }

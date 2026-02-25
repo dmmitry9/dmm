@@ -7,10 +7,12 @@ import SeasonInfo from "./components/SeasonInfo";
 import DeployPanel from "./components/DeployPanel";
 import RewardsPanel from "./components/RewardsPanel";
 import RulesPage from "./components/RulesPage";
+import BattleLog from "./components/BattleLog";
 import {
   useGameState,
   useLaneScores,
   useLaneSquads,
+  useBattleHistory,
   useTreasuryBreakdown,
   useUSDCBalance,
   usePendingRewards,
@@ -39,6 +41,7 @@ export default function App() {
   const gameState = useGameState();
   const { lanes } = useLaneScores();
   const laneSquads = useLaneSquads();
+  const battleHistory = useBattleHistory();
   const usdcBalance = useUSDCBalance(address);
   const treasuryBreakdown = useTreasuryBreakdown(gameState.seasonId);
   const pendingRewards = usePendingRewards(address);
@@ -80,6 +83,8 @@ export default function App() {
             weather={gameState.weather}
             specialEvent={gameState.specialEvent}
           />
+
+          <BattleLog battles={battleHistory} />
 
           {/* Game Info Bar */}
           <div className="grid grid-cols-3 gap-3">
