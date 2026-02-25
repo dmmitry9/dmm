@@ -84,8 +84,6 @@ export default function App() {
             specialEvent={gameState.specialEvent}
           />
 
-          <BattleLog battles={battleHistory} />
-
           {/* Game Info Bar */}
           <div className="grid grid-cols-3 gap-3">
             <ForcesCard
@@ -106,6 +104,8 @@ export default function App() {
               <span className="text-[10px] text-gray-600">1.5× advantage</span>
             </div>
           </div>
+
+          <BattleLog battles={battleHistory} />
 
           {/* Spectator notice */}
           {!address && (
