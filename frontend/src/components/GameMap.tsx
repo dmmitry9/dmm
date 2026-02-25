@@ -1,4 +1,4 @@
-import { BASTION_SEGMENT, FACTION, UNIT_EMOJI } from "../lib/constants";
+import { BASTION_SEGMENT, FACTION, UNIT_EMOJI, formatTimeRemaining } from "../lib/constants";
 import type { SegmentSquad } from "../hooks/useGameState";
 
 interface LaneData {
@@ -18,27 +18,42 @@ const SEGMENT_LABELS = ["P-Base", "P-2", "P-1", "Bastion", "S-1", "S-2", "S-Base
 function SquadBadge({ squads }: { squads: SegmentSquad[] }) {
   if (squads.length === 0) return null;
 
-  // Group by faction
-  const pepeUnits = squads
-    .filter((s) => s.faction === FACTION.PEPE)
-    .reduce((sum, s) => sum + s.effectiveUnits, 0);
-  const shibUnits = squads
-    .filter((s) => s.faction === FACTION.SHIB)
-    .reduce((sum, s) => sum + s.effectiveUnits, 0);
+  const pepeSquads = squads.filter((s) => s.faction === FACTION.PEPE);
+  const shibSquads = squads.filter((s) => s.faction === FACTION.SHIB);
 
-  const pepeTypes = [...new Set(squads.filter((s) => s.faction === FACTION.PEPE).map((s) => s.unitType))];
-  const shibTypes = [...new Set(squads.filter((s) => s.faction === FACTION.SHIB).map((s) => s.unitType))];
+  const pepeUnits = pepeSquads.reduce((sum, s) => sum + s.effectiveUnits, 0);
+  const shibUnits = shibSquads.reduce((sum, s) => sum + s.effectiveUnits, 0);
+
+  const pepeTypes = [...new Set(pepeSquads.map((s) => s.unitType))];
+  const shibTypes = [...new Set(shibSquads.map((s) => s.unitType))];
+
+  const pepeMarching = pepeSquads.some((s) => s.isMarching);
+  const shibMarching = shibSquads.some((s) => s.isMarching);
+
+  // Earliest arrival for marching squads
+  const pepeArrival = pepeMarching
+    ? Math.min(...pepeSquads.filter((s) => s.isMarching).map((s) => s.arrivalTime))
+    : 0;
+  const shibArrival = shibMarching
+    ? Math.min(...shibSquads.filter((s) => s.isMarching).map((s) => s.arrivalTime))
+    : 0;
 
   return (
     <div className="flex flex-col items-center gap-0.5">
       {pepeUnits > 0 && (
         <span className="text-[10px] text-pepe font-bold leading-tight">
           🐸{pepeUnits}{pepeTypes.map((t) => UNIT_EMOJI[t] || "").join("")}
+          {pepeMarching && (
+            <span className="text-yellow-400 ml-0.5">⏳{formatTimeRemaining(pepeArrival)}</span>
+          )}
         </span>
       )}
       {shibUnits > 0 && (
         <span className="text-[10px] text-shib font-bold leading-tight">
           🐕{shibUnits}{shibTypes.map((t) => UNIT_EMOJI[t] || "").join("")}
+          {shibMarching && (
+            <span className="text-yellow-400 ml-0.5">⏳{formatTimeRemaining(shibArrival)}</span>
+          )}
         </span>
       )}
     </div>

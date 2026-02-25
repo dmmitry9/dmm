@@ -291,4 +291,35 @@ export const TREASURY_ABI = [
     inputs: [{ name: "seasonId", type: "uint256" }],
     outputs: [],
   },
+  {
+    name: "getKillPot",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "laneId", type: "uint8" },
+      { name: "faction", type: "uint8" },
+    ],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    name: "getSeasonTreasury",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "seasonId", type: "uint256" }],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    name: "creatorsBalance",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    name: "buybackReserve",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
 ] as const;

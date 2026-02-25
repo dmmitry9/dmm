@@ -145,6 +145,68 @@ export function useUnitPrice(
   return data as bigint | undefined;
 }
 
+// ── Treasury breakdown ──
+export interface TreasuryBreakdown {
+  killPots: { pepe: bigint; shib: bigint }[];
+  seasonTreasury: bigint;
+  creatorsBalance: bigint;
+  buybackReserve: bigint;
+}
+
+export function useTreasuryBreakdown(seasonId: bigint | undefined): TreasuryBreakdown {
+  const { data } = useReadContracts({
+    contracts: [
+      // Kill pots: 3 lanes × 2 factions = 6 calls
+      ...[0, 1, 2].flatMap((lane) => [
+        {
+          address: ADDRESSES.treasury,
+          abi: TREASURY_ABI,
+          functionName: "getKillPot" as const,
+          args: [lane, 1] as const, // PEPE
+        },
+        {
+          address: ADDRESSES.treasury,
+          abi: TREASURY_ABI,
+          functionName: "getKillPot" as const,
+          args: [lane, 2] as const, // SHIB
+        },
+      ]),
+      // Season treasury
+      {
+        address: ADDRESSES.treasury,
+        abi: TREASURY_ABI,
+        functionName: "getSeasonTreasury" as const,
+        args: [seasonId ?? 1n] as const,
+      },
+      // Creators balance
+      {
+        address: ADDRESSES.treasury,
+        abi: TREASURY_ABI,
+        functionName: "creatorsBalance" as const,
+      },
+      // Buyback reserve
+      {
+        address: ADDRESSES.treasury,
+        abi: TREASURY_ABI,
+        functionName: "buybackReserve" as const,
+      },
+    ],
+    query: { refetchInterval: 15_000, enabled: seasonId !== undefined },
+  });
+
+  const killPots = [0, 1, 2].map((lane) => ({
+    pepe: (data?.[lane * 2]?.result as bigint) ?? 0n,
+    shib: (data?.[lane * 2 + 1]?.result as bigint) ?? 0n,
+  }));
+
+  return {
+    killPots,
+    seasonTreasury: (data?.[6]?.result as bigint) ?? 0n,
+    creatorsBalance: (data?.[7]?.result as bigint) ?? 0n,
+    buybackReserve: (data?.[8]?.result as bigint) ?? 0n,
+  };
+}
+
 // ── Squad info for all lanes (3-step multicall) ──
 export interface SegmentSquad {
   squadId: number;
@@ -152,6 +214,7 @@ export interface SegmentSquad {
   unitType: number;
   effectiveUnits: number;
   isMarching: boolean;
+  arrivalTime: number;
 }
 
 // laneSquads[laneId][segmentIndex] = SegmentSquad[]
@@ -288,6 +351,8 @@ export function useLaneSquads(): LaneSquads {
       if (!squadData || !squadData[4]) continue; // skip inactive
 
       const lane = squadMeta[i].lane;
+      const deployedAt = Number(squadData[5]);
+      const arrivalTime = deployedAt + 90 * 60; // MARCH_DURATION = 90 minutes
       if (lane < NUM_LANES && segment < 7) {
         result[lane][segment].push({
           squadId: squadIds[i],
@@ -295,6 +360,7 @@ export function useLaneSquads(): LaneSquads {
           unitType: squadData[2],
           effectiveUnits: effective,
           isMarching: squadMeta[i].isMarching,
+          arrivalTime,
         });
       }
     }

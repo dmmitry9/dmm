@@ -9,6 +9,7 @@ import {
   useGameState,
   useLaneScores,
   useLaneSquads,
+  useTreasuryBreakdown,
   useUSDCBalance,
   usePendingRewards,
 } from "./hooks/useGameState";
@@ -19,7 +20,7 @@ export default function App() {
   const { lanes } = useLaneScores();
   const laneSquads = useLaneSquads();
   const usdcBalance = useUSDCBalance(address);
-  const treasuryBalance = useUSDCBalance(ADDRESSES.treasury);
+  const treasuryBreakdown = useTreasuryBreakdown(gameState.seasonId);
   const pendingRewards = usePendingRewards(address);
 
   const laneData = lanes.map((l) => ({
@@ -107,7 +108,7 @@ export default function App() {
             specialEventEndsAt={gameState.specialEventEndsAt}
             pendingRewards={pendingRewards}
             usdcBalance={usdcBalance}
-            treasuryBalance={treasuryBalance}
+            treasuryBreakdown={treasuryBreakdown}
           />
 
           <DeployPanel

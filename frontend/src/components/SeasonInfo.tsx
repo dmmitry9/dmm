@@ -1,3 +1,4 @@
+import type { TreasuryBreakdown } from "../hooks/useGameState";
 import {
   WEATHER_LABELS,
   WEATHER_EMOJI,
@@ -20,7 +21,7 @@ interface SeasonInfoProps {
   specialEventEndsAt: number;
   pendingRewards: bigint | undefined;
   usdcBalance: bigint | undefined;
-  treasuryBalance: bigint | undefined;
+  treasuryBreakdown: TreasuryBreakdown;
 }
 
 export default function SeasonInfo({
@@ -34,11 +35,16 @@ export default function SeasonInfo({
   specialEventEndsAt,
   pendingRewards,
   usdcBalance,
-  treasuryBalance,
+  treasuryBreakdown,
 }: SeasonInfoProps) {
   const seasonEnd = seasonStartTime
     ? Number(seasonStartTime) + SEASON_DURATION
     : 0;
+
+  const totalKillPot = treasuryBreakdown.killPots.reduce(
+    (sum, lp) => sum + lp.pepe + lp.shib,
+    0n
+  );
 
   return (
     <div className="card space-y-4">
@@ -75,13 +81,32 @@ export default function SeasonInfo({
         </div>
       </div>
 
-      {/* Treasury */}
-      <div className="p-3 rounded-lg bg-yellow-900/20 border border-yellow-800/40">
+      {/* Treasury Breakdown */}
+      <div className="p-3 rounded-lg bg-yellow-900/20 border border-yellow-800/40 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-yellow-500">Treasury Balance</span>
-          <span className="font-mono font-bold text-yellow-400">
-            {treasuryBalance !== undefined ? formatUSDC(treasuryBalance) : "—"}
+          <span className="text-xs text-yellow-500 font-bold">💰 Treasury</span>
+          <span className="font-mono text-xs text-yellow-400">
+            Season Pool: {formatUSDC(treasuryBreakdown.seasonTreasury)}
           </span>
+        </div>
+
+        {/* Kill Pots per lane */}
+        <div className="space-y-1">
+          <span className="text-[10px] text-gray-500 uppercase tracking-wider">Kill Pots</span>
+          {treasuryBreakdown.killPots.map((lp, i) => (
+            <div key={i} className="flex items-center justify-between text-xs">
+              <span className="text-gray-400">Lane {i + 1}</span>
+              <span className="font-mono">
+                <span className="text-pepe">🐸{formatUSDC(lp.pepe)}</span>
+                {" / "}
+                <span className="text-shib">🐕{formatUSDC(lp.shib)}</span>
+              </span>
+            </div>
+          ))}
+          <div className="flex items-center justify-between text-xs border-t border-yellow-800/30 pt-1">
+            <span className="text-yellow-500">Total Kill Pot</span>
+            <span className="font-mono font-bold text-yellow-400">{formatUSDC(totalKillPot)}</span>
+          </div>
         </div>
       </div>
 
