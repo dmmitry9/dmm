@@ -125,6 +125,19 @@ export default function App() {
         </div>
       </main>
 
+      {/* Rules */}
+      <section className="max-w-7xl mx-auto px-6 pb-6">
+        <div className="card space-y-2 text-sm text-gray-300">
+          <h3 className="font-bold text-base text-gray-200">📜 How It Works</h3>
+          <p>🐸 <span className="text-pepe font-semibold">PEPE</span> vs <span className="text-shib font-semibold">SHIB</span> 🐕 — pick a side and recruit units for USDC.</p>
+          <p>3 lanes, 3 unit types: ⚔️ &gt; 🔱 &gt; 🐎 &gt; ⚔️ (1.5× RPS bonus).</p>
+          <p>Units march to the enemy bastion 🏰 in 90 minutes.</p>
+          <p>💰 70% of recruits → kill pot: win battles — claim the enemy&apos;s USDC.</p>
+          <p>🏦 Hold the bastion — farm USDC every minute.</p>
+          <p>🏆 Top 3 players of the winning faction receive a Season NFT at the end of each season (7 days).</p>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-game-border px-6 py-4 text-center text-xs text-gray-600">
         PEPE vs SHIB Battle Arena — Built on Base L2 — USDC Economy
