@@ -18,43 +18,25 @@ const SEGMENT_LABELS = ["P-Base", "P-2", "P-1", "Bastion", "S-1", "S-2", "S-Base
 function SquadBadge({ squads }: { squads: SegmentSquad[] }) {
   if (squads.length === 0) return null;
 
-  const pepeSquads = squads.filter((s) => s.faction === FACTION.PEPE);
-  const shibSquads = squads.filter((s) => s.faction === FACTION.SHIB);
-
-  const pepeUnits = pepeSquads.reduce((sum, s) => sum + s.effectiveUnits, 0);
-  const shibUnits = shibSquads.reduce((sum, s) => sum + s.effectiveUnits, 0);
-
-  const pepeTypes = [...new Set(pepeSquads.map((s) => s.unitType))];
-  const shibTypes = [...new Set(shibSquads.map((s) => s.unitType))];
-
-  const pepeMarching = pepeSquads.some((s) => s.isMarching);
-  const shibMarching = shibSquads.some((s) => s.isMarching);
-
-  // Earliest arrival for marching squads
-  const pepeArrival = pepeMarching
-    ? Math.min(...pepeSquads.filter((s) => s.isMarching).map((s) => s.arrivalTime))
-    : 0;
-  const shibArrival = shibMarching
-    ? Math.min(...shibSquads.filter((s) => s.isMarching).map((s) => s.arrivalTime))
-    : 0;
+  // Sort by arrival time (closest first), show up to 5
+  const sorted = [...squads].sort((a, b) => a.arrivalTime - b.arrivalTime).slice(0, 5);
 
   return (
-    <div className="flex flex-col items-center gap-0.5">
-      {pepeUnits > 0 && (
-        <span className="text-[10px] text-pepe font-bold leading-tight">
-          🐸{pepeUnits}{pepeTypes.map((t) => UNIT_EMOJI[t] || "").join("")}
-          {pepeMarching && (
-            <span className="text-yellow-400 ml-0.5">⏳{formatTimeRemaining(pepeArrival)}</span>
-          )}
-        </span>
-      )}
-      {shibUnits > 0 && (
-        <span className="text-[10px] text-shib font-bold leading-tight">
-          🐕{shibUnits}{shibTypes.map((t) => UNIT_EMOJI[t] || "").join("")}
-          {shibMarching && (
-            <span className="text-yellow-400 ml-0.5">⏳{formatTimeRemaining(shibArrival)}</span>
-          )}
-        </span>
+    <div className="flex flex-col items-center gap-px">
+      {sorted.map((s) => {
+        const factionEmoji = s.faction === FACTION.PEPE ? "🐸" : "🐕";
+        const colorClass = s.faction === FACTION.PEPE ? "text-pepe" : "text-shib";
+        return (
+          <span key={s.squadId} className={`text-[9px] ${colorClass} font-bold leading-tight`}>
+            {factionEmoji}{s.effectiveUnits}{UNIT_EMOJI[s.unitType] || ""}
+            {s.isMarching && (
+              <span className="text-yellow-400 ml-0.5">⏳{formatTimeRemaining(s.arrivalTime)}</span>
+            )}
+          </span>
+        );
+      })}
+      {squads.length > 5 && (
+        <span className="text-[8px] text-gray-500">+{squads.length - 5} more</span>
       )}
     </div>
   );
@@ -89,14 +71,11 @@ function Segment({
     <div
       className={`
         relative flex items-center justify-center
-        h-16 rounded-lg border transition-all
+        min-h-[5.5rem] rounded-lg border transition-all py-1
         ${isBastion ? "border-bastion" : hasSquads ? "border-gray-500" : "border-game-border"}
         ${bgClass}
       `}
     >
-      <span className="text-[10px] text-gray-500 absolute top-1 left-1.5">
-        {SEGMENT_LABELS[index]}
-      </span>
       {hasSquads ? (
         <SquadBadge squads={squads} />
       ) : (
