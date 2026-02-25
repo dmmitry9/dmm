@@ -77,7 +77,7 @@ export default function App() {
             />
             <div className="card text-center">
               <span className="text-xs text-gray-500 block">RPS System</span>
-              <div className="text-lg mt-1">⚔️ &gt; 🏹 &gt; 🐴 &gt; ⚔️</div>
+              <div className="text-lg mt-1">⚔️ &gt; 🔱 &gt; 🐴 &gt; ⚔️</div>
               <span className="text-[10px] text-gray-600">1.5× advantage</span>
             </div>
           </div>
