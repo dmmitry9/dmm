@@ -15,11 +15,12 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     //                 CONSTANTS
     // ═══════════════════════════════════════════
 
-    uint256 public constant SEGMENT_DURATION       = 30 minutes;
-    uint256 public constant MARCH_DURATION         = 90 minutes;
+    uint256 public constant SEGMENT_DURATION       = 3 minutes;  // 10x speed (was 30 min)
+    uint256 public constant MARCH_DURATION         = 9 minutes;  // 10x speed (was 90 min)
+    uint256 public constant ATTRITION_TICK         = 6 minutes;  // 10x speed: 6 min = 1 "hour" of attrition (was 1 hour)
     uint256 public constant WEATHER_INTERVAL       = 6 hours;
     uint256 public constant SPECIAL_EVENT_DURATION = 2 hours;
-    uint256 public constant SEASON_DURATION        = 7 days;
+    uint256 public constant SEASON_DURATION        = 60480;      // 10x speed: ~16.8h (was 7 days)
     uint8   public constant BASTION_SEGMENT        = 3;
     uint8   public constant PEPE_START_SEGMENT     = 0;
     uint8   public constant SHIB_START_SEGMENT     = 6;
@@ -191,7 +192,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
             return s.initialCount; // Still marching, no decay
         }
 
-        uint256 hoursInBastion = (block.timestamp - attritionStart) / 1 hours;
+        uint256 hoursInBastion = (block.timestamp - attritionStart) / ATTRITION_TICK;
 
         // Apply special event modifier
         if (currentSpecialEvent == SpecialEvent.EPIDEMIC && block.timestamp < specialEventEndsAt) {
@@ -221,7 +222,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
             return s.initialCount;
         }
 
-        uint256 hoursInBastion = (block.timestamp - attritionStart) / 1 hours;
+        uint256 hoursInBastion = (block.timestamp - attritionStart) / ATTRITION_TICK;
 
         if (currentSpecialEvent == SpecialEvent.EPIDEMIC && block.timestamp < specialEventEndsAt) {
             hoursInBastion = hoursInBastion * 2;
@@ -244,13 +245,16 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         pepe = b.holdScorePEPE;
         shib = b.holdScoreSHIB;
 
-        // Add unfixed score since last update
-        if (b.lastHoldScoreUpdate > 0 && !b.contestedAtUpdate) {
-            uint256 minutesDelta = (block.timestamp - b.lastHoldScoreUpdate) / 1 minutes;
-            if (minutesDelta > 0) {
-                (uint256 pepeUnits, uint256 shibUnits) = _countBastionUnits(laneId);
-                pepe += uint128(pepeUnits * minutesDelta);
-                shib += uint128(shibUnits * minutesDelta);
+        // Add unfixed score since last update (use live contested check, not stale flag)
+        if (b.lastHoldScoreUpdate > 0) {
+            (uint256 pepeUnits, uint256 shibUnits) = _countBastionUnits(laneId);
+            bool currentlyContested = pepeUnits > 0 && shibUnits > 0;
+            if (!currentlyContested) {
+                uint256 minutesDelta = (block.timestamp - b.lastHoldScoreUpdate) / 1 minutes;
+                if (minutesDelta > 0) {
+                    pepe += uint128(pepeUnits * minutesDelta);
+                    shib += uint128(shibUnits * minutesDelta);
+                }
             }
         }
     }
@@ -854,6 +858,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         uint256[] storage ids = bastionSquads[laneId];
         uint256 pepeUnits;
         uint256 shibUnits;
+        bool hasPepe;
+        bool hasShib;
         uint256 i = 0;
         uint256 len = ids.length;
         while (i < len) {
@@ -867,6 +873,21 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
             }
             uint256 eff = _getEffectiveUnitsFromRef(s);
             if (eff == 0) {
+                // Credit zombie's accumulated hold score for this period BEFORE cleanup
+                if (!b.contestedAtUpdate) {
+                    uint256 periodStartHours;
+                    if (b.lastHoldScoreUpdate > s.bastionEnteredAt) {
+                        periodStartHours = (b.lastHoldScoreUpdate - s.bastionEnteredAt) / ATTRITION_TICK;
+                    }
+                    if (periodStartHours <= 168) {
+                        uint256 effAtPeriodStart = (uint256(s.initialCount) * _getAttrition(periodStartHours)) / 10_000;
+                        if (effAtPeriodStart > 0) {
+                            if (s.faction == Faction.PEPE) pepeUnits += effAtPeriodStart;
+                            else shibUnits += effAtPeriodStart;
+                            playerStats[currentSeasonId][s.owner].holdScoreContrib += uint128(effAtPeriodStart * minutesDelta);
+                        }
+                    }
+                }
                 uint256 attritionPot = (uint256(s.costPaid) * SPLIT_KILL_REWARD) / BPS_DENOM;
                 s.active = false;
                 if (s.faction == Faction.PEPE) {
@@ -883,6 +904,9 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
                 unchecked { --len; }
                 continue;
             }
+            // Track faction presence for contested state recalculation
+            if (s.faction == Faction.PEPE) hasPepe = true;
+            else hasShib = true;
             // @dev Contested lanes (both factions present) don't accrue hold score.
             // This prevents gaming via deliberate small deployments to farm score during contested periods.
             if (!b.contestedAtUpdate) {
@@ -901,6 +925,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
             if (shibUnits > 0) b.holdScoreSHIB += uint128(shibUnits * minutesDelta);
         }
 
+        // Recalculate contested state after zombie cleanup
+        b.contestedAtUpdate = hasPepe && hasShib;
         b.lastHoldScoreUpdate = uint40(block.timestamp);
         emit HoldScoreUpdated(laneId, b.holdScorePEPE, b.holdScoreSHIB);
     }

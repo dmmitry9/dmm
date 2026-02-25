@@ -25,10 +25,12 @@
 
 | Contract | Address |
 |----------|---------|
-| MockUSDC | `0xEA0EDBD17cC63AFe4795729B69f43f915Ca447F3` |
-| GameEngine | `0x9Ad131d846cB8c4620E4dA2FbDC9008E32bfE507` |
-| Treasury | `0xB60CC3093BCeB8Fc809F05FB45249042B329A350` |
-| SeasonNFT | `0x1E8e35c6e4aeB96a59c7E54CDd827F04d4406266` |
+| MockUSDC | `0x0ef5691F8bb3413B4C5CF3ae5A9172BC452324C2` |
+| GameEngine (v3) | `0xA9D6F72F8e2d3dF9f2EF7161e6168E64d1806dBD` |
+| Treasury (v2) | `0x901C708d2F1b1AD1248734482a02B3487027Ace3` |
+| SeasonNFT | `0xd9C47c1007026707e198f11901d667e6463df0C8` |
+| GameEngine (v2, deprecated) | `0x6b730ddd0d5BdE94BF4f3E624E0163E90320ff83` |
+| Treasury (v1, deprecated) | `0xB60CC3093BCeB8Fc809F05FB45249042B329A350` |
 
 ### Deployer Account
 - **Address:** `0x777715E32Bad440FfAc2E6ab67dF4F2E817571d2`
@@ -148,8 +150,12 @@ stoic-rosalind/
 ### Key UI Features
 - **GameMap segments:** Min-height 5.5rem, show 5 squad timers, Total line per segment (except bastion), hover tooltip for 20 squads
 - **Squad timers:** Only shown for marching squads where `arrivalTime > now` (no "Ended" display)
+- **Arrive button:** Appears when squads finish marching. `arrive()` auto-triggers battle if both factions present in bastion
+- **Resolve Battle button:** Manual battle trigger when bastion is contested
+- **Forces counter:** Shows computed effective units from `laneSquads` data (not stale contract `totalUnitsPEPE`/`totalUnitsSHIB`)
 - **RPS icons:** ⚔️ Swordsman > 🔱 Spearman > 🐎 Cavalry
 - **Hash routing:** `#rules` → RulesPage, no router dependency
+- **Attrition table:** Rules page includes decay table showing effective units at 6h/12h/18h/24h for stack sizes 1–100
 
 ---
 
@@ -162,7 +168,8 @@ stoic-rosalind/
 - **March:** 90 minutes across 3 segments to bastion
 - **Weather:** Changes every 6 hours, +20% to one unit type
 - **Special Events:** Epidemic (2× decay), Harvest (½ decay), Eclipse (no RPS)
-- **Attrition:** ~4%/hour in bastion (0.96^h)
+- **Attrition:** ~4%/hour after march duration (0.96^h). Small stacks (1 unit) die in ~5h due to integer truncation
+- **Zombie Cleanup:** `arrive()` checks for 0-effective squads and cleans them. `cleanupMarchingZombies(laneId)` — permissionless batch cleanup for marching zombies
 - **Battle:** Combat power = effective × RPS multiplier × weather bonus
 
 ### Treasury.sol
@@ -200,7 +207,13 @@ a7def72 fix: update USDC fallback address to MockUSDC
 1080468 feat: battle history log from on-chain events
 a63aef8 ui: total summary line + hover tooltip for segment squads
 ca1158c ui: move battle log below forces/RPS info bar
-1354c3f feat: light/dark theme toggle + UI cleanup        ← LATEST
+1354c3f feat: light/dark theme toggle + UI cleanup
+6f1e063 fix: theme-aware colors for light mode + bastion shows only Total
+a0f1c33 fix: accent colors contrast for light theme
+e70f920 feat: add Resolve Battle button when bastion is contested
+2ad427a feat: add Arrive button for squads that finished marching
+d7a2405 fix: cleanup marching zombie squads + effective forces counter
+4363074 feat: add attrition decay table to rules page          ← LATEST
 ```
 
 ---
@@ -208,22 +221,26 @@ ca1158c ui: move battle log below forces/RPS info bar
 ## 8. Known Issues & Potential Improvements
 
 ### Theme Gaps (Light Mode)
-Some components still use hardcoded `bg-gray-800` / `text-gray-*` classes that may look off in light theme:
-- `DeployPanel.tsx` — faction/unit/lane buttons use `bg-gray-800`
-- `SeasonInfo.tsx` — weather panel uses `bg-gray-800/50`
-- `DeployPanel.tsx` — price preview and count input use `bg-gray-800`
+Most light theme issues are fixed. Some components may still use hardcoded `bg-gray-800` / `text-gray-*`:
+- `DeployPanel.tsx` — faction/unit/lane buttons, price preview and count input
+- `SeasonInfo.tsx` — weather panel
+
+### Completed Features (from previous "next steps")
+- ~~Add "Arrive" button~~ → Done (commit `2ad427a`)
+- ~~Add "Resolve Battle" button~~ → Done (commit `e70f920`)
+- ~~Fix light theme colors~~ → Mostly done (commits `6f1e063`, `a0f1c33`)
+- ~~Zombie cleanup for marching squads~~ → Done (commit `d7a2405`)
+- ~~Effective forces counter~~ → Done (commit `d7a2405`)
 
 ### Possible Next Steps
-- Fix light theme colors in all components (replace `bg-gray-800` → `var(--input-bg)`)
-- Add "Arrive" button for squads that have marched to the bastion segment
 - Add "Retreat" button for marching squads (80% refund)
-- Add "Resolve Battle" button when both factions present in bastion
 - Player's own squads highlighting / management panel
 - Auto-refresh squad positions with animation
 - Mobile responsive layout improvements
 - Sound effects / notifications for battles
 - Subgraph integration for historical analytics
 - Mainnet (Base) deployment
+- Fix remaining light theme hardcoded colors in DeployPanel/SeasonInfo
 
 ---
 
@@ -232,10 +249,10 @@ Some components still use hardcoded `bg-gray-800` / `text-gray-*` classes that m
 Set in `.github/workflows/deploy-frontend.yml`:
 ```
 VITE_WC_PROJECT_ID=demo
-VITE_GAME_ENGINE=0x9Ad131d846cB8c4620E4dA2FbDC9008E32bfE507
-VITE_TREASURY=0xB60CC3093BCeB8Fc809F05FB45249042B329A350
-VITE_SEASON_NFT=0x1E8e35c6e4aeB96a59c7E54CDd827F04d4406266
-VITE_USDC=0xEA0EDBD17cC63AFe4795729B69f43f915Ca447F3
+VITE_GAME_ENGINE=0xA9D6F72F8e2d3dF9f2EF7161e6168E64d1806dBD
+VITE_TREASURY=0x901C708d2F1b1AD1248734482a02B3487027Ace3
+VITE_SEASON_NFT=0xd9C47c1007026707e198f11901d667e6463df0C8
+VITE_USDC=0x0ef5691F8bb3413B4C5CF3ae5A9172BC452324C2
 ```
 
 ---

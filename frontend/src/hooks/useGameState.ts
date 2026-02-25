@@ -353,7 +353,7 @@ export function useLaneSquads(): LaneSquads {
 
       const lane = squadMeta[i].lane;
       const deployedAt = Number(squadData[5]);
-      const arrivalTime = deployedAt + 90 * 60; // MARCH_DURATION = 90 minutes
+      const arrivalTime = deployedAt + 9 * 60; // MARCH_DURATION = 9 minutes (10x speed)
       if (lane < NUM_LANES && segment < 7) {
         result[lane][segment].push({
           squadId: squadIds[i],

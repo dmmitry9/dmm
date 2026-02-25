@@ -201,8 +201,8 @@ export default function App() {
             seasonId={gameState.seasonId}
             seasonActive={gameState.seasonActive}
             seasonStartTime={gameState.seasonStartTime}
-            totalPEPE={gameState.totalPEPE}
-            totalSHIB={gameState.totalSHIB}
+            totalPEPE={BigInt(effectivePEPE)}
+            totalSHIB={BigInt(effectiveSHIB)}
             weather={gameState.weather}
             specialEvent={gameState.specialEvent}
             specialEventEndsAt={gameState.specialEventEndsAt}

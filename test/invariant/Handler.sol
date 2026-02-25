@@ -36,7 +36,7 @@ contract Handler is Test {
     // Track deployed squads for arrive/retreat
     uint256[] public deployedSquadIds;
 
-    uint256 constant MARCH_DURATION = 90 minutes;
+    uint256 constant MARCH_DURATION = 9 minutes;
 
     constructor(
         GameEngine _engine,

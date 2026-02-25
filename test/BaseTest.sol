@@ -25,8 +25,8 @@ contract BaseTest is Test {
     address public dave     = address(0xDA7E);
     address public eve      = address(0xE7E);
 
-    uint256 constant MARCH_DURATION  = 90 minutes;
-    uint256 constant SEASON_DURATION = 7 days;
+    uint256 constant MARCH_DURATION  = 9 minutes;
+    uint256 constant SEASON_DURATION = 60480; // 7 days / 10
     uint256 constant BPS_DENOM       = 10_000;
 
     function setUp() public virtual {
