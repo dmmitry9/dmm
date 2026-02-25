@@ -84,6 +84,26 @@ export default function App() {
     });
   };
 
+  // Arrive squads at bastion
+  const [arrivingSquadId, setArrivingSquadId] = useState<number | null>(null);
+  const { writeContract: arriveSquad, data: arriveTx } = useWriteContract();
+  const { isSuccess: arriveSuccess } = useWaitForTransactionReceipt({ hash: arriveTx });
+
+  if (arriveSuccess && arrivingSquadId !== null) {
+    setArrivingSquadId(null);
+    gameState.refetch();
+  }
+
+  const handleArriveSquad = (squadId: number) => {
+    setArrivingSquadId(squadId);
+    arriveSquad({
+      address: ADDRESSES.gameEngine,
+      abi: GAME_ENGINE_ABI,
+      functionName: "arrive",
+      args: [squadId],
+    });
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--game-bg)", color: "var(--text-primary)" }}>
       {/* Header */}
@@ -126,6 +146,8 @@ export default function App() {
             specialEvent={gameState.specialEvent}
             onResolveBattle={handleResolveBattle}
             resolvingLane={resolvingLane}
+            onArriveSquad={handleArriveSquad}
+            arrivingSquadId={arrivingSquadId}
           />
 
           {/* Game Info Bar */}
