@@ -96,6 +96,32 @@ export default function RulesPage({ onBack }: { onBack: () => void }) {
             <li>When effective units hit 0, the squad is removed and <B>70% of its original cost</B> goes to the season treasury.</li>
             <li>Epidemic doubles the effective hours; Harvest halves them.</li>
           </ul>
+          <p className="mt-3 mb-1 font-semibold" style={{ color: "var(--text-primary)" }}>📊 Attrition Table</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs" style={{ borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--game-border)" }}>
+                  <Th>Initial</Th>
+                  <Th>6h</Th>
+                  <Th>12h</Th>
+                  <Th>18h</Th>
+                  <Th>24h</Th>
+                  <Th>Death</Th>
+                </tr>
+              </thead>
+              <tbody>
+                <AttritionRow initial={1} values={["0"]} death="~5h" />
+                <AttritionRow initial={2} values={["1", "0"]} death="~12h" />
+                <AttritionRow initial={5} values={["3", "2", "1", "0"]} death="~24h" />
+                <AttritionRow initial={10} values={["7", "4", "2", "1"]} death="~30h" />
+                <AttritionRow initial={50} values={["39", "23", "14", "8"]} death="~90h" />
+                <AttritionRow initial={100} values={["78", "47", "28", "17"]} death="~112h" />
+              </tbody>
+            </table>
+          </div>
+          <p className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>
+            Effective = floor(initial × 0.96^hours). Small squads die fast due to integer rounding.
+          </p>
         </Section>
 
         {/* Battle Resolution */}
@@ -191,6 +217,32 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function B({ children }: { children: React.ReactNode }) {
   return <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{children}</span>;
+}
+
+function Th({ children }: { children: React.ReactNode }) {
+  return (
+    <th className="px-2 py-1.5 text-left font-semibold" style={{ color: "var(--text-muted)" }}>
+      {children}
+    </th>
+  );
+}
+
+function AttritionRow({ initial, values, death }: { initial: number; values: string[]; death: string }) {
+  const padded = [...values, ...Array(4 - values.length).fill("—")];
+  const isDead = initial <= 2;
+  return (
+    <tr style={{ borderBottom: "1px solid var(--game-border)" }}>
+      <td className="px-2 py-1.5 font-bold" style={{ color: "var(--text-primary)" }}>{initial}</td>
+      {padded.map((v, i) => (
+        <td key={i} className="px-2 py-1.5" style={{ color: v === "0" ? "var(--accent-red, #ef4444)" : v === "—" ? "var(--text-muted)" : "var(--text-secondary)" }}>
+          {v === "0" ? "💀 0" : v}
+        </td>
+      ))}
+      <td className="px-2 py-1.5 font-semibold" style={{ color: isDead ? "var(--accent-red, #ef4444)" : "var(--accent-yellow)" }}>
+        {death}
+      </td>
+    </tr>
+  );
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
