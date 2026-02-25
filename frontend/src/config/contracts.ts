@@ -9,7 +9,7 @@ export const ADDRESSES = {
   seasonNFT: (import.meta.env.VITE_SEASON_NFT ||
     "0x0000000000000000000000000000000000000000") as Address,
   usdc: (import.meta.env.VITE_USDC ||
-    "0x036CbD53842c5426634e7929541eC2318f3dCF7e") as Address, // Base Sepolia USDC
+    "0xEA0EDBD17cC63AFe4795729B69f43f915Ca447F3") as Address, // MockUSDC (deployed)
 } as const;
 
 // ── GameEngine ABI (minimal — only functions used by frontend) ──
