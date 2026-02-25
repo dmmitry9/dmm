@@ -1,4 +1,4 @@
-import { BASTION_SEGMENT, FACTION, UNIT_EMOJI, formatTimeRemaining } from "../lib/constants";
+import { BASTION_SEGMENT, FACTION, UNIT_EMOJI, UNIT_TYPE, formatTimeRemaining } from "../lib/constants";
 import type { SegmentSquad } from "../hooks/useGameState";
 
 interface LaneData {
@@ -14,30 +14,89 @@ interface GameMapProps {
 }
 
 const SEGMENT_LABELS = ["P-Base", "P-2", "P-1", "Bastion", "S-1", "S-2", "S-Base"];
+const UNIT_TYPES = [UNIT_TYPE.SWORDSMAN, UNIT_TYPE.SPEARMAN, UNIT_TYPE.CAVALRY];
+
+function factionTotals(squads: SegmentSquad[], faction: number) {
+  const fSquads = squads.filter((s) => s.faction === faction);
+  const total = fSquads.reduce((sum, s) => sum + s.effectiveUnits, 0);
+  const byType = UNIT_TYPES.map((t) =>
+    fSquads.filter((s) => s.unitType === t).reduce((sum, s) => sum + s.effectiveUnits, 0)
+  );
+  return { total, byType };
+}
+
+function TotalLine({ squads }: { squads: SegmentSquad[] }) {
+  const pepe = factionTotals(squads, FACTION.PEPE);
+  const shib = factionTotals(squads, FACTION.SHIB);
+
+  return (
+    <div className="flex flex-col items-center gap-px border-b border-gray-700/50 pb-0.5 mb-0.5 w-full px-0.5">
+      {pepe.total > 0 && (
+        <span className="text-[8px] text-pepe font-bold leading-tight">
+          🐸{pepe.total}
+          {pepe.byType.map((c, i) =>
+            c > 0 ? <span key={i} className="text-gray-400"> {c}{UNIT_EMOJI[UNIT_TYPES[i]]}</span> : null
+          )}
+        </span>
+      )}
+      {shib.total > 0 && (
+        <span className="text-[8px] text-shib font-bold leading-tight">
+          🐕{shib.total}
+          {shib.byType.map((c, i) =>
+            c > 0 ? <span key={i} className="text-gray-400"> {c}{UNIT_EMOJI[UNIT_TYPES[i]]}</span> : null
+          )}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function SquadLine({ s }: { s: SegmentSquad }) {
+  const factionEmoji = s.faction === FACTION.PEPE ? "🐸" : "🐕";
+  const colorClass = s.faction === FACTION.PEPE ? "text-pepe" : "text-shib";
+  return (
+    <span className={`text-[9px] ${colorClass} font-bold leading-tight`}>
+      {factionEmoji}{s.effectiveUnits}{UNIT_EMOJI[s.unitType] || ""}
+      {s.isMarching && (
+        <span className="text-yellow-400 ml-0.5">⏳{formatTimeRemaining(s.arrivalTime)}</span>
+      )}
+    </span>
+  );
+}
 
 function SquadBadge({ squads }: { squads: SegmentSquad[] }) {
   if (squads.length === 0) return null;
 
-  // Sort by arrival time (closest first), show up to 5
-  const sorted = [...squads].sort((a, b) => a.arrivalTime - b.arrivalTime).slice(0, 5);
+  const sorted = [...squads].sort((a, b) => a.arrivalTime - b.arrivalTime);
+  const visible = sorted.slice(0, 5);
 
   return (
-    <div className="flex flex-col items-center gap-px">
-      {sorted.map((s) => {
-        const factionEmoji = s.faction === FACTION.PEPE ? "🐸" : "🐕";
-        const colorClass = s.faction === FACTION.PEPE ? "text-pepe" : "text-shib";
-        return (
-          <span key={s.squadId} className={`text-[9px] ${colorClass} font-bold leading-tight`}>
-            {factionEmoji}{s.effectiveUnits}{UNIT_EMOJI[s.unitType] || ""}
-            {s.isMarching && (
-              <span className="text-yellow-400 ml-0.5">⏳{formatTimeRemaining(s.arrivalTime)}</span>
-            )}
-          </span>
-        );
-      })}
+    <div className="flex flex-col items-center gap-px w-full">
+      <TotalLine squads={squads} />
+      {visible.map((s) => (
+        <SquadLine key={s.squadId} s={s} />
+      ))}
       {squads.length > 5 && (
         <span className="text-[8px] text-gray-500">+{squads.length - 5} more</span>
       )}
+    </div>
+  );
+}
+
+function SquadTooltip({ squads }: { squads: SegmentSquad[] }) {
+  const sorted = [...squads].sort((a, b) => a.arrivalTime - b.arrivalTime).slice(0, 20);
+
+  return (
+    <div className="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-1 bg-gray-900 border border-gray-600 rounded-lg px-2 py-1.5 shadow-xl min-w-[120px] pointer-events-none">
+      <TotalLine squads={squads} />
+      <div className="flex flex-col items-center gap-px mt-0.5">
+        {sorted.map((s) => (
+          <SquadLine key={s.squadId} s={s} />
+        ))}
+        {squads.length > 20 && (
+          <span className="text-[8px] text-gray-500">+{squads.length - 20} more</span>
+        )}
+      </div>
     </div>
   );
 }
@@ -70,14 +129,21 @@ function Segment({
   return (
     <div
       className={`
-        relative flex items-center justify-center
+        group relative flex items-center justify-center
         min-h-[5.5rem] rounded-lg border transition-all py-1
         ${isBastion ? "border-bastion" : hasSquads ? "border-gray-500" : "border-game-border"}
         ${bgClass}
       `}
     >
       {hasSquads ? (
-        <SquadBadge squads={squads} />
+        <>
+          <SquadBadge squads={squads} />
+          {squads.length > 5 && (
+            <div className="hidden group-hover:block">
+              <SquadTooltip squads={squads} />
+            </div>
+          )}
+        </>
       ) : (
         <>
           {isBastion && <span className="text-lg">🏰</span>}
