@@ -519,6 +519,10 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     /// @notice Set a special event. Called by Treasury via VRF callback. Lasts SPECIAL_EVENT_DURATION.
     /// @param evt The special event type (EPIDEMIC, HARVEST, ECLIPSE).
     function setSpecialEvent(SpecialEvent evt) external override onlyTreasury {
+        // Snapshot all bastions before event change to lock in attrition
+        for (uint8 i = 0; i < NUM_LANES; i++) {
+            _updateHoldScore(i);
+        }
         currentSpecialEvent = evt;
         specialEventEndsAt = block.timestamp + SPECIAL_EVENT_DURATION;
         emit SpecialEventStarted(evt, specialEventEndsAt);
@@ -541,6 +545,10 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     /// @notice Permissionless special event roll. Uses blockhash pseudo-randomness. Rate-limited.
     function rollSpecialEvent() external onlySeason {
         require(block.timestamp >= specialEventEndsAt, "Event still active");
+        // Snapshot all bastions before event change to lock in attrition
+        for (uint8 i = 0; i < NUM_LANES; i++) {
+            _updateHoldScore(i);
+        }
         uint256 rand = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), block.timestamp, msg.sender)));
         uint256 eventIndex = rand % 4; // 25% each: NONE, EPIDEMIC, HARVEST, ECLIPSE
         if (eventIndex == 0) {
@@ -955,6 +963,12 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
             // Track faction presence for contested state recalculation
             if (s.faction == Faction.PEPE) hasPepe = true;
             else hasShib = true;
+            // Snapshot attrition into squad state — makes decay permanent.
+            // Prevents units from "recovering" when a special event ends.
+            if (eff < s.initialCount) {
+                s.initialCount = uint32(eff);
+                s.bastionEnteredAt = uint40(block.timestamp);
+            }
             // @dev Contested lanes (both factions present) don't accrue hold score.
             // This prevents gaming via deliberate small deployments to farm score during contested periods.
             if (!b.contestedAtUpdate) {

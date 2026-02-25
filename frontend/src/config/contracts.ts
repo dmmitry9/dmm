@@ -9,7 +9,7 @@ export const ADDRESSES = {
   seasonNFT: (import.meta.env.VITE_SEASON_NFT ||
     "0x0000000000000000000000000000000000000000") as Address,
   usdc: (import.meta.env.VITE_USDC ||
-    "0x5d5a379eE59D0EE533AB6C35D98B251e0487e45C") as Address, // MockUSDC v6
+    "0x5735D9c1993154c0B6EAb9dcc3785F89ec43aCFD") as Address, // MockUSDC v7
 } as const;
 
 // ── GameEngine ABI (minimal — only functions used by frontend) ──
