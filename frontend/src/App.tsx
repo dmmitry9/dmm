@@ -7,6 +7,7 @@ import RewardsPanel from "./components/RewardsPanel";
 import {
   useGameState,
   useLaneScores,
+  useLaneSquads,
   useUSDCBalance,
   usePendingRewards,
 } from "./hooks/useGameState";
@@ -15,6 +16,7 @@ export default function App() {
   const { address } = useAccount();
   const gameState = useGameState();
   const { lanes } = useLaneScores();
+  const laneSquads = useLaneSquads();
   const usdcBalance = useUSDCBalance(address);
   const pendingRewards = usePendingRewards(address);
 
@@ -51,6 +53,7 @@ export default function App() {
         <div className="lg:col-span-2 space-y-6">
           <GameMap
             lanes={laneData}
+            laneSquads={laneSquads}
             weather={gameState.weather}
             specialEvent={gameState.specialEvent}
           />

@@ -112,6 +112,58 @@ export const GAME_ENGINE_ABI = [
     inputs: [{ name: "", type: "address" }],
     outputs: [{ type: "uint8" }],
   },
+  {
+    name: "bastionSquads",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "", type: "uint256" },
+      { name: "", type: "uint256" },
+    ],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    name: "marchingSquads",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "", type: "uint256" },
+      { name: "", type: "uint256" },
+    ],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    name: "squads",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "uint256" }],
+    outputs: [
+      { name: "owner", type: "address" },
+      { name: "laneId", type: "uint8" },
+      { name: "unitType", type: "uint8" },
+      { name: "faction", type: "uint8" },
+      { name: "active", type: "bool" },
+      { name: "deployedAt", type: "uint40" },
+      { name: "bastionEnteredAt", type: "uint40" },
+      { name: "initialCount", type: "uint32" },
+      { name: "costPaid", type: "uint96" },
+      { name: "seasonId", type: "uint32" },
+    ],
+  },
+  {
+    name: "getSquadSegment",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "squadId", type: "uint256" }],
+    outputs: [{ type: "uint8" }],
+  },
+  {
+    name: "getEffectiveUnits",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "squadId", type: "uint256" }],
+    outputs: [{ type: "uint256" }],
+  },
   // Write
   {
     name: "deployUnits",

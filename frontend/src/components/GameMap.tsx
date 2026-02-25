@@ -1,4 +1,5 @@
-import { BASTION_SEGMENT } from "../lib/constants";
+import { BASTION_SEGMENT, FACTION, UNIT_EMOJI } from "../lib/constants";
+import type { SegmentSquad } from "../hooks/useGameState";
 
 interface LaneData {
   pepeScore: bigint;
@@ -7,45 +8,89 @@ interface LaneData {
 
 interface GameMapProps {
   lanes: LaneData[];
+  laneSquads: SegmentSquad[][][];
   weather: number;
   specialEvent: number;
 }
 
 const SEGMENT_LABELS = ["P-Base", "P-2", "P-1", "Bastion", "S-1", "S-2", "S-Base"];
 
+function SquadBadge({ squads }: { squads: SegmentSquad[] }) {
+  if (squads.length === 0) return null;
+
+  // Group by faction
+  const pepeUnits = squads
+    .filter((s) => s.faction === FACTION.PEPE)
+    .reduce((sum, s) => sum + s.effectiveUnits, 0);
+  const shibUnits = squads
+    .filter((s) => s.faction === FACTION.SHIB)
+    .reduce((sum, s) => sum + s.effectiveUnits, 0);
+
+  const pepeTypes = [...new Set(squads.filter((s) => s.faction === FACTION.PEPE).map((s) => s.unitType))];
+  const shibTypes = [...new Set(squads.filter((s) => s.faction === FACTION.SHIB).map((s) => s.unitType))];
+
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      {pepeUnits > 0 && (
+        <span className="text-[10px] text-pepe font-bold leading-tight">
+          🐸{pepeUnits}{pepeTypes.map((t) => UNIT_EMOJI[t] || "").join("")}
+        </span>
+      )}
+      {shibUnits > 0 && (
+        <span className="text-[10px] text-shib font-bold leading-tight">
+          🐕{shibUnits}{shibTypes.map((t) => UNIT_EMOJI[t] || "").join("")}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function Segment({
   index,
-  laneId,
+  squads,
 }: {
   index: number;
-  laneId: number;
+  squads: SegmentSquad[];
 }) {
   const isBastion = index === BASTION_SEGMENT;
   const isPepeSide = index < BASTION_SEGMENT;
   const isShibSide = index > BASTION_SEGMENT;
+  const hasSquads = squads.length > 0;
 
   let bgClass = "bg-gray-800";
   if (isBastion) bgClass = "bg-bastion/30 bastion-glow";
   else if (isPepeSide) bgClass = "bg-pepe/10";
   else if (isShibSide) bgClass = "bg-shib/10";
 
+  if (hasSquads && !isBastion) {
+    const hasPepe = squads.some((s) => s.faction === FACTION.PEPE);
+    const hasShib = squads.some((s) => s.faction === FACTION.SHIB);
+    if (hasPepe && hasShib) bgClass = "bg-yellow-900/30";
+    else if (hasPepe) bgClass = "bg-pepe/20";
+    else if (hasShib) bgClass = "bg-shib/20";
+  }
+
   return (
     <div
       className={`
         relative flex items-center justify-center
         h-16 rounded-lg border transition-all
-        ${isBastion ? "border-bastion" : "border-game-border"}
+        ${isBastion ? "border-bastion" : hasSquads ? "border-gray-500" : "border-game-border"}
         ${bgClass}
       `}
     >
       <span className="text-[10px] text-gray-500 absolute top-1 left-1.5">
         {SEGMENT_LABELS[index]}
       </span>
-      {isBastion && (
-        <span className="text-lg">🏰</span>
+      {hasSquads ? (
+        <SquadBadge squads={squads} />
+      ) : (
+        <>
+          {isBastion && <span className="text-lg">🏰</span>}
+          {index === 0 && <span className="text-sm">🐸</span>}
+          {index === 6 && <span className="text-sm">🐕</span>}
+        </>
       )}
-      {index === 0 && <span className="text-sm">🐸</span>}
-      {index === 6 && <span className="text-sm">🐕</span>}
     </div>
   );
 }
@@ -72,10 +117,12 @@ function LaneRow({
   laneId,
   pepeScore,
   shibScore,
+  segments,
 }: {
   laneId: number;
   pepeScore: bigint;
   shibScore: bigint;
+  segments: SegmentSquad[][];
 }) {
   return (
     <div className="space-y-2">
@@ -87,7 +134,7 @@ function LaneRow({
       </div>
       <div className="grid grid-cols-7 gap-1.5">
         {[0, 1, 2, 3, 4, 5, 6].map((seg) => (
-          <Segment key={seg} index={seg} laneId={laneId} />
+          <Segment key={seg} index={seg} squads={segments[seg] || []} />
         ))}
       </div>
       <ScoreBar pepe={pepeScore} shib={shibScore} />
@@ -95,7 +142,7 @@ function LaneRow({
   );
 }
 
-export default function GameMap({ lanes, weather, specialEvent }: GameMapProps) {
+export default function GameMap({ lanes, laneSquads, weather, specialEvent }: GameMapProps) {
   return (
     <div className="card space-y-6">
       <div className="flex items-center justify-between">
@@ -115,6 +162,7 @@ export default function GameMap({ lanes, weather, specialEvent }: GameMapProps) 
           laneId={i}
           pepeScore={lane.pepeScore}
           shibScore={lane.shibScore}
+          segments={laneSquads[i] || Array.from({ length: 7 }, () => [])}
         />
       ))}
     </div>

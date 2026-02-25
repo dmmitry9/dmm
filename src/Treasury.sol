@@ -29,6 +29,8 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
     // Pricing (USDC 6 decimals)
     uint256 public constant BASE_PRICE_USDC = 5_000_000; // $5
     uint256 public constant MAX_PRICE_USDC  = 7_000_000; // $7
+    uint256 public constant SURGE_START     = 100;        // diff threshold to start price increase
+    uint256 public constant SURGE_END       = 1000;       // diff threshold for max price
 
     // VRF timing
     uint256 public constant WEATHER_INTERVAL      = 6 hours;
@@ -254,15 +256,18 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
             return BASE_PRICE_USDC * count;
         }
 
-        // Dominant faction: price = min(MAX, BASE × (2 × dominant) / (dominant + underdog))
-        // Derivation: BASE × (1 + (dominant - underdog) / (dominant + underdog))
-        //           = BASE × (dominant + underdog + dominant - underdog) / (dominant + underdog)
-        //           = BASE × (2 × dominant) / (dominant + underdog)
-        uint256 pricePerUnit = (BASE_PRICE_USDC * 2 * dominant) / total;
-        if (pricePerUnit > MAX_PRICE_USDC) {
-            pricePerUnit = MAX_PRICE_USDC;
+        // Dominant faction: linear price ramp from BASE to MAX
+        // based on unit difference (SURGE_START..SURGE_END → $5..$7)
+        uint256 diff = dominant - underdog;
+        if (diff <= SURGE_START) {
+            return BASE_PRICE_USDC * count;
         }
-
+        if (diff >= SURGE_END) {
+            return MAX_PRICE_USDC * count;
+        }
+        uint256 pricePerUnit = BASE_PRICE_USDC
+            + ((MAX_PRICE_USDC - BASE_PRICE_USDC) * (diff - SURGE_START))
+            / (SURGE_END - SURGE_START);
         return pricePerUnit * count;
     }
 
