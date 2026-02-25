@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { ADDRESSES, GAME_ENGINE_ABI, ERC20_ABI } from "../config/contracts";
 import { useUnitPrice, usePlayerFaction } from "../hooks/useGameState";
 import {
@@ -37,18 +37,33 @@ export default function DeployPanel({
 
   const price = useUnitPrice(activeFaction, count, totalPEPE, totalSHIB);
 
+  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+    address: ADDRESSES.usdc,
+    abi: ERC20_ABI,
+    functionName: "allowance",
+    args: address ? [address, ADDRESSES.gameEngine] : undefined,
+    query: { enabled: !!address },
+  });
+  const currentAllowance = (allowance as bigint | undefined) ?? 0n;
+  const hasEnoughAllowance = price ? currentAllowance >= price : false;
+
   const { writeContract: approve, data: approveTx } = useWriteContract();
   const { writeContract: deploy, data: deployTx } = useWriteContract();
 
-  const { isLoading: isApproving } = useWaitForTransactionReceipt({
+  const { isLoading: isApproving, isSuccess: approveSuccess } = useWaitForTransactionReceipt({
     hash: approveTx,
   });
   const { isLoading: isDeploying, isSuccess } = useWaitForTransactionReceipt({
     hash: deployTx,
   });
 
+  if (approveSuccess) {
+    refetchAllowance();
+  }
+
   if (isSuccess) {
     onDeployed();
+    refetchAllowance();
   }
 
   const handleApprove = () => {
@@ -179,22 +194,32 @@ export default function DeployPanel({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2">
-        <button
-          onClick={handleApprove}
-          disabled={!price || isApproving}
-          className="btn-neutral flex-1"
-        >
-          {isApproving ? "Approving..." : "1. Approve USDC"}
-        </button>
+      {hasEnoughAllowance ? (
         <button
           onClick={handleDeploy}
           disabled={!price || isDeploying}
-          className={`flex-1 ${activeFaction === FACTION.PEPE ? "btn-pepe" : "btn-shib"}`}
+          className={`w-full py-3 rounded-lg font-bold ${activeFaction === FACTION.PEPE ? "btn-pepe" : "btn-shib"}`}
         >
-          {isDeploying ? "Deploying..." : "2. Deploy ⚔️"}
+          {isDeploying ? "Deploying..." : "Deploy ⚔️"}
         </button>
-      </div>
+      ) : (
+        <div className="flex gap-2">
+          <button
+            onClick={handleApprove}
+            disabled={!price || isApproving}
+            className="btn-neutral flex-1"
+          >
+            {isApproving ? "Approving..." : "1. Approve USDC"}
+          </button>
+          <button
+            onClick={handleDeploy}
+            disabled={!price || isDeploying || !hasEnoughAllowance}
+            className={`flex-1 opacity-50 ${activeFaction === FACTION.PEPE ? "btn-pepe" : "btn-shib"}`}
+          >
+            2. Deploy ⚔️
+          </button>
+        </div>
+      )}
     </div>
   );
 }
