@@ -109,7 +109,7 @@ export default function App() {
       address: ADDRESSES.gameEngine,
       abi: GAME_ENGINE_ABI,
       functionName: "arrive",
-      args: [squadId],
+      args: [BigInt(squadId)],
     });
   };
 
