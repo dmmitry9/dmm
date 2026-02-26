@@ -29,11 +29,10 @@ contract Handler is Test {
     // Action counters
     uint256 public calls_deploy;
     uint256 public calls_arrive;
-    uint256 public calls_retreat;
     uint256 public calls_withdraw;
     uint256 public calls_advanceTime;
 
-    // Track deployed squads for arrive/retreat
+    // Track deployed squads for arrive
     uint256[] public deployedSquadIds;
 
     uint256 constant MARCH_DURATION = 3 minutes;
@@ -108,21 +107,6 @@ contract Handler is Test {
 
         try engine.refreshHoldScore(laneId) {
             calls_arrive++;
-        } catch {}
-    }
-
-    function retreat(uint256 seed) external {
-        if (deployedSquadIds.length == 0) return;
-
-        uint256 idx = bound(seed, 0, deployedSquadIds.length - 1);
-        uint256 squadId = deployedSquadIds[idx];
-
-        (address squadOwner,,,, bool active, , uint40 bastionEnteredAt,,,,) = engine.squads(squadId);
-        if (!active || bastionEnteredAt > 0) return;
-
-        vm.prank(squadOwner);
-        try engine.retreat(squadId) {
-            calls_retreat++;
         } catch {}
     }
 

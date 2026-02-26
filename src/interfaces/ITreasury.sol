@@ -62,20 +62,6 @@ interface ITreasury {
         uint256 totalSHIB
     ) external pure returns (uint256);
 
-    /// @notice Refund retreat cost to the player (80% of costPaid).
-    /// @param player      The player receiving the refund.
-    /// @param totalRefund The total USDC amount to refund (costPaid × 80%).
-    /// @param laneId      Lane the squad was in (to debit killPot).
-    /// @param faction     Faction of the squad (to debit killPot).
-    /// @param costPaid    Original cost paid for the squad.
-    function refundRetreat(
-        address player,
-        uint256 totalRefund,
-        uint8 laneId,
-        uint8 faction,
-        uint256 costPaid
-    ) external;
-
     /// @notice Finalize the season treasury (stops hold score accrual).
     /// @param seasonId       The season being finalized.
     /// @param totalHoldScore Sum of all hold scores across all bastions (PEPE + SHIB).
@@ -94,7 +80,7 @@ interface ITreasury {
     //            PLAYER FUNCTIONS
     // ═══════════════════════════════════════════
 
-    /// @notice Withdraw all accumulated pending rewards (kill rewards, retreat refunds).
+    /// @notice Withdraw all accumulated pending rewards (kill rewards).
     function withdraw() external;
 
     // ═══════════════════════════════════════════

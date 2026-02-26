@@ -414,7 +414,7 @@ export function useLaneSquads(): LaneSquads {
   return laneSquads;
 }
 
-// ── Battle + Retreat history from on-chain events ──
+// ── Battle history from on-chain events ──
 export interface BattleRecord {
   type: "battle";
   laneId: number;
@@ -430,20 +430,7 @@ export interface BattleRecord {
   blockNumber: bigint;
 }
 
-export interface RetreatRecord {
-  type: "retreat";
-  laneId: number;
-  faction: number;
-  unitType: number;
-  units: number;
-  refund: bigint;
-  penalty: bigint;
-  owner: string;
-  timestamp: number;
-  blockNumber: bigint;
-}
-
-export type HistoryRecord = BattleRecord | RetreatRecord;
+export type HistoryRecord = BattleRecord;
 
 const BATTLE_EVENT = parseAbiItem(
   "event BattleResolved(uint8 indexed laneId, uint8 winner, uint256 totalSurvivors, uint256 winnerPot, uint256 loserEarned)"
@@ -451,10 +438,6 @@ const BATTLE_EVENT = parseAbiItem(
 
 const BATTLE_DETAILS_EVENT = parseAbiItem(
   "event BattleDetails(uint8 indexed laneId, uint256 pepeUnitsStart, uint256 shibUnitsStart, uint256 pepeCombat, uint256 shibCombat)"
-);
-
-const RETREATED_EVENT = parseAbiItem(
-  "event Retreated(uint256 indexed squadId, address indexed owner, uint8 faction, uint8 laneId, uint8 unitType, uint32 units, uint256 refund, uint256 penalty)"
 );
 
 export function useBattleHistory(): HistoryRecord[] {
@@ -470,12 +453,11 @@ export function useBattleHistory(): HistoryRecord[] {
       const ranges = [10000n, 2000n, 500n];
       let battleLogs: Awaited<ReturnType<typeof client.getLogs<typeof BATTLE_EVENT>>> = [];
       let detailLogs: Awaited<ReturnType<typeof client.getLogs<typeof BATTLE_DETAILS_EVENT>>> = [];
-      let retreatLogs: Awaited<ReturnType<typeof client.getLogs<typeof RETREATED_EVENT>>> = [];
 
       for (const range of ranges) {
         const fromBlock = currentBlock > range ? currentBlock - range : 0n;
         try {
-          [battleLogs, detailLogs, retreatLogs] = await Promise.all([
+          [battleLogs, detailLogs] = await Promise.all([
             client.getLogs({
               address: ADDRESSES.gameEngine,
               event: BATTLE_EVENT,
@@ -488,12 +470,6 @@ export function useBattleHistory(): HistoryRecord[] {
               fromBlock,
               toBlock: "latest",
             }),
-            client.getLogs({
-              address: ADDRESSES.gameEngine,
-              event: RETREATED_EVENT,
-              fromBlock,
-              toBlock: "latest",
-            }),
           ]);
           break;
         } catch {
@@ -501,7 +477,7 @@ export function useBattleHistory(): HistoryRecord[] {
         }
       }
 
-      if (battleLogs.length === 0 && retreatLogs.length === 0) {
+      if (battleLogs.length === 0) {
         setHistory([]);
         return;
       }
@@ -514,11 +490,7 @@ export function useBattleHistory(): HistoryRecord[] {
       }
 
       // Get unique block numbers for timestamps
-      const allBlocks = [
-        ...battleLogs.map((l) => l.blockNumber),
-        ...retreatLogs.map((l) => l.blockNumber),
-      ];
-      const uniqueBlocks = [...new Set(allBlocks)];
+      const uniqueBlocks = [...new Set(battleLogs.map((l) => l.blockNumber))];
       const blockMap = new Map<bigint, number>();
       await Promise.all(
         uniqueBlocks.map(async (bn) => {
@@ -531,7 +503,7 @@ export function useBattleHistory(): HistoryRecord[] {
         })
       );
 
-      const battleRecords: HistoryRecord[] = battleLogs.map((log) => {
+      const records: HistoryRecord[] = battleLogs.map((log) => {
         const laneId = Number(log.args.laneId ?? 0);
         const detail = detailMap.get(`${log.blockNumber}-${laneId}`);
         return {
@@ -550,24 +522,11 @@ export function useBattleHistory(): HistoryRecord[] {
         };
       });
 
-      const retreatRecords: HistoryRecord[] = retreatLogs.map((log) => ({
-        type: "retreat" as const,
-        laneId: Number(log.args.laneId ?? 0),
-        faction: Number(log.args.faction ?? 0),
-        unitType: Number(log.args.unitType ?? 0),
-        units: Number(log.args.units ?? 0),
-        refund: log.args.refund ?? 0n,
-        penalty: log.args.penalty ?? 0n,
-        owner: (log.args.owner ?? "") as string,
-        timestamp: blockMap.get(log.blockNumber) ?? 0,
-        blockNumber: log.blockNumber,
-      }));
-
-      const merged = [...battleRecords, ...retreatRecords]
-        .sort((a, b) => Number(b.blockNumber - a.blockNumber))
-        .slice(0, 15);
-
-      setHistory(merged);
+      setHistory(
+        records
+          .sort((a, b) => Number(b.blockNumber - a.blockNumber))
+          .slice(0, 15)
+      );
     } catch (err) {
       console.error("Battle history fetch failed:", err);
     }

@@ -135,26 +135,6 @@ export default function App() {
     });
   };
 
-  // Retreat squads
-  const [retreatingSquadId, setRetreatingSquadId] = useState<number | null>(null);
-  const { writeContract: retreatSquad, data: retreatTx } = useWriteContract();
-  const { isSuccess: retreatSuccess } = useWaitForTransactionReceipt({ hash: retreatTx });
-
-  if (retreatSuccess && retreatingSquadId !== null) {
-    setRetreatingSquadId(null);
-    gameState.refetch();
-  }
-
-  const handleRetreatSquad = (squadId: number) => {
-    setRetreatingSquadId(squadId);
-    retreatSquad({
-      address: ADDRESSES.gameEngine,
-      abi: GAME_ENGINE_ABI,
-      functionName: "retreat",
-      args: [BigInt(squadId)],
-    });
-  };
-
   // Refresh hold scores (all 3 lanes in one tx)
   const [refreshingScores, setRefreshingScores] = useState(false);
   const { writeContract: refreshAllLanes, data: refreshTx } = useWriteContract();
@@ -262,13 +242,20 @@ export default function App() {
             laneSquads={laneSquads}
             weather={gameState.weather}
             specialEvent={gameState.specialEvent}
+            specialEventEndsAt={gameState.specialEventEndsAt}
+            weatherSetAt={gameState.weatherSetAt}
             address={address}
             onResolveBattle={handleResolveBattle}
             resolvingLane={resolvingLane}
-            onRetreatSquad={address ? handleRetreatSquad : undefined}
-            retreatingSquadId={retreatingSquadId}
             onRefreshScores={address ? handleRefreshScores : undefined}
             isRefreshingScores={refreshingScores}
+            killPots={treasuryBreakdown.killPots}
+            weatherCooldownReady={weatherCooldownReady}
+            eventCooldownReady={eventCooldownReady}
+            onRollWeather={address ? handleRollWeather : undefined}
+            onRollSpecialEvent={address ? handleRollEvent : undefined}
+            isRollingWeather={rollingWeather}
+            isRollingEvent={rollingEvent}
           />
 
           {/* Game Info Bar */}
@@ -313,21 +300,9 @@ export default function App() {
             seasonId={gameState.seasonId}
             seasonActive={gameState.seasonActive}
             seasonStartTime={gameState.seasonStartTime}
-            totalPEPE={BigInt(effectivePEPE)}
-            totalSHIB={BigInt(effectiveSHIB)}
-            weather={gameState.weather}
-            specialEvent={gameState.specialEvent}
-            specialEventEndsAt={gameState.specialEventEndsAt}
-            weatherSetAt={gameState.weatherSetAt}
             pendingRewards={pendingRewards}
             usdcBalance={usdcBalance}
             treasuryBreakdown={treasuryBreakdown}
-            weatherCooldownReady={weatherCooldownReady}
-            eventCooldownReady={eventCooldownReady}
-            onRollWeather={address ? handleRollWeather : undefined}
-            onRollSpecialEvent={address ? handleRollEvent : undefined}
-            isRollingWeather={rollingWeather}
-            isRollingEvent={rollingEvent}
             playerHoldScore={playerHoldScore}
             playerLaneScores={playerLaneScores}
             laneHoldScores={lanes}

@@ -47,7 +47,6 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
     event PartialKillRewardDistributed(
         uint8 indexed laneId, uint8 fromFaction, uint256 distributed, uint256 remaining
     );
-    event RetreatRefunded(address indexed player, uint256 refund, uint8 laneId, uint8 faction);
     event AttritionPotTransferred(uint8 indexed laneId, uint8 faction, uint256 amount);
     event SeasonFinalized(uint256 indexed seasonId, uint8 winnerFaction, uint256 treasuryBalance);
     event SeasonClaimed(uint256 indexed seasonId, address indexed player, uint256 amount);
@@ -363,47 +362,8 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
     }
 
     // ═══════════════════════════════════════════
-    //          RETREAT & ATTRITION
+    //          ATTRITION
     // ═══════════════════════════════════════════
-
-    /// @inheritdoc ITreasury
-    function refundRetreat(
-        address player,
-        uint256 totalRefund,
-        uint8 laneId,
-        uint8 faction,
-        uint256 costPaid
-    ) external override onlyGameEngine {
-        // 70% of original cost came from killPot
-        uint256 killPotPortion = (costPaid * SPLIT_KILL_REWARD) / BPS_DENOM;
-        // Remaining refund comes from season treasury
-        uint256 treasuryPortion = totalRefund - killPotPortion;
-
-        // @dev Underflow guards: kill pot and season treasury may have less than expected
-        // due to battle distributions or rounding dust. The deficit is absorbed by protocol
-        // seed funds (initial USDC deposited via seedTreasury). This is a known design decision.
-        if (killPotPortion <= killPot[laneId][faction]) {
-            killPot[laneId][faction] -= killPotPortion;
-        } else {
-            killPotPortion = killPot[laneId][faction];
-            killPot[laneId][faction] = 0;
-            treasuryPortion = totalRefund - killPotPortion;
-        }
-
-        // Debit season treasury (with underflow guard)
-        if (treasuryPortion <= seasonTreasury[currentSeasonId]) {
-            seasonTreasury[currentSeasonId] -= treasuryPortion;
-        } else {
-            // If season treasury insufficient, debit what's available
-            // The deficit is absorbed by the protocol (covered by seed funds)
-            seasonTreasury[currentSeasonId] = 0;
-        }
-
-        // Credit player
-        pendingRewards[player] += totalRefund;
-
-        emit RetreatRefunded(player, totalRefund, laneId, faction);
-    }
 
     /// @inheritdoc ITreasury
     function transferAttritionPotToTreasury(

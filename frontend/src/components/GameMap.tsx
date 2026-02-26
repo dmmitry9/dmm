@@ -1,4 +1,5 @@
-import { BASTION_SEGMENT, FACTION, UNIT_EMOJI, UNIT_TYPE, formatTimeRemaining } from "../lib/constants";
+import { useState, useEffect } from "react";
+import { BASTION_SEGMENT, FACTION, UNIT_EMOJI, UNIT_TYPE, formatTimeRemaining, formatUSDC, WEATHER_LABELS, WEATHER_EMOJI, WEATHER_BONUS_UNIT, EVENT_LABELS, EVENT_EMOJI, WEATHER_INTERVAL, formatTime } from "../lib/constants";
 import type { SegmentSquad } from "../hooks/useGameState";
 
 interface LaneData {
@@ -11,16 +12,22 @@ interface GameMapProps {
   laneSquads: SegmentSquad[][][];
   weather: number;
   specialEvent: number;
+  specialEventEndsAt: number;
+  weatherSetAt: number;
   address?: string;
   onResolveBattle?: (laneId: number) => void;
   resolvingLane?: number | null;
-  onRetreatSquad?: (squadId: number) => void;
-  retreatingSquadId?: number | null;
   onRefreshScores?: () => void;
   isRefreshingScores?: boolean;
+  killPots?: { pepe: bigint; shib: bigint }[];
+  weatherCooldownReady?: boolean;
+  eventCooldownReady?: boolean;
+  onRollWeather?: () => void;
+  onRollSpecialEvent?: () => void;
+  isRollingWeather?: boolean;
+  isRollingEvent?: boolean;
 }
 
-const SEGMENT_LABELS = ["P-Base", "P-2", "P-1", "Bastion", "S-1", "S-2", "S-Base"];
 const UNIT_TYPES = [UNIT_TYPE.SWORDSMAN, UNIT_TYPE.SPEARMAN, UNIT_TYPE.CAVALRY];
 
 function factionTotals(squads: SegmentSquad[], faction: number) {
@@ -193,21 +200,17 @@ function LaneRow({
   pepeScore,
   shibScore,
   segments,
-  address,
   onResolveBattle,
   resolvingLane,
-  onRetreatSquad,
-  retreatingSquadId,
+  killPot,
 }: {
   laneId: number;
   pepeScore: bigint;
   shibScore: bigint;
   segments: SegmentSquad[][];
-  address?: string;
   onResolveBattle?: (laneId: number) => void;
   resolvingLane?: number | null;
-  onRetreatSquad?: (squadId: number) => void;
-  retreatingSquadId?: number | null;
+  killPot?: { pepe: bigint; shib: bigint };
 }) {
   const bastionSquads = segments[BASTION_SEGMENT] || [];
   const hasPepeInBastion = bastionSquads.some((s) => s.faction === FACTION.PEPE);
@@ -218,7 +221,16 @@ function LaneRow({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs px-1" style={{ color: "var(--text-secondary)" }}>
-        <span>Lane {laneId + 1}</span>
+        <span className="flex items-center gap-2">
+          Lane {laneId + 1}
+          {killPot && (killPot.pepe > 0n || killPot.shib > 0n) && (
+            <span className="font-mono text-[10px]" style={{ color: "var(--accent-yellow)" }}>
+              💰 <span className="text-pepe">🐸{formatUSDC(killPot.pepe)}</span>
+              {" / "}
+              <span className="text-shib">🦊{formatUSDC(killPot.shib)}</span>
+            </span>
+          )}
+        </span>
         <span>
           🐸 {Number(pepeScore).toLocaleString()} — {Number(shibScore).toLocaleString()} 🦊
         </span>
@@ -228,27 +240,6 @@ function LaneRow({
           <Segment key={seg} index={seg} squads={segments[seg] || []} />
         ))}
       </div>
-      {/* Retreat button for player's marching squads (not yet at bastion) */}
-      {address && onRetreatSquad && (() => {
-        const playerMarchingSquads = segments
-          .flatMap((seg) => seg)
-          .filter((s) => s.isMarching && s.owner.toLowerCase() === address.toLowerCase());
-        if (playerMarchingSquads.length === 0) return null;
-        const squad = playerMarchingSquads[0];
-        const isRetreating = retreatingSquadId === squad.squadId;
-        return (
-          <button
-            onClick={() => onRetreatSquad(squad.squadId)}
-            disabled={isRetreating}
-            className="w-full py-2 rounded-lg font-bold text-sm text-white transition-all hover:opacity-90 disabled:opacity-50"
-            style={{ background: "linear-gradient(to right, #ef4444, #dc2626)" }}
-          >
-            {isRetreating
-              ? "⏳ Retreating..."
-              : `🏃 Retreat — ${playerMarchingSquads.length} squad${playerMarchingSquads.length > 1 ? "s" : ""} marching (Lane ${laneId + 1})`}
-          </button>
-        );
-      })()}
       {contested && onResolveBattle && (
         <button
           onClick={() => onResolveBattle(laneId)}
@@ -263,22 +254,103 @@ function LaneRow({
   );
 }
 
-export default function GameMap({ lanes, laneSquads, weather, specialEvent, address, onResolveBattle, resolvingLane, onRetreatSquad, retreatingSquadId, onRefreshScores, isRefreshingScores }: GameMapProps) {
+export default function GameMap({
+  lanes,
+  laneSquads,
+  weather,
+  specialEvent,
+  specialEventEndsAt,
+  weatherSetAt,
+  onResolveBattle,
+  resolvingLane,
+  onRefreshScores,
+  isRefreshingScores,
+  killPots,
+  weatherCooldownReady,
+  eventCooldownReady,
+  onRollWeather,
+  onRollSpecialEvent,
+  isRollingWeather,
+  isRollingEvent,
+}: GameMapProps) {
+  const [now, setNow] = useState(Math.floor(Date.now() / 1000));
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const weatherCooldownEnd = weatherSetAt > 0 ? weatherSetAt + WEATHER_INTERVAL : 0;
+  const weatherRemaining = weatherCooldownEnd > now ? weatherCooldownEnd - now : 0;
+
   return (
     <div className="card space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header: Weather + Controls */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-bold">⚔️ Battlefield</h2>
-        <div className="flex items-center gap-3 text-xs" style={{ color: "var(--text-secondary)" }}>
-          <span className="text-pepe font-bold">🐸 PEPE</span>
-          <span>→ march →</span>
-          <span className="text-bastion font-bold">🏰</span>
-          <span>← march ←</span>
-          <span className="text-shib font-bold">🦊 SHIB</span>
+        <div className="flex items-center gap-2 text-xs flex-wrap">
+          {/* Weather badge */}
+          <span className="px-2 py-0.5 rounded" style={{ backgroundColor: "var(--panel-bg)" }}>
+            {WEATHER_EMOJI[weather]} {WEATHER_LABELS[weather]}
+            {weather > 0 && (
+              <span className="ml-1" style={{ color: "var(--accent-yellow)" }}>({WEATHER_BONUS_UNIT[weather]})</span>
+            )}
+          </span>
+
+          {/* Special event badge */}
+          {specialEvent > 0 && (
+            <span className="px-2 py-0.5 rounded" style={{ backgroundColor: "var(--panel-bg)", color: "var(--accent-purple)" }}>
+              {EVENT_EMOJI[specialEvent]} {EVENT_LABELS[specialEvent]}
+              <span className="ml-1" style={{ color: "var(--text-muted)" }}>
+                ({formatTimeRemaining(specialEventEndsAt)})
+              </span>
+            </span>
+          )}
+
+          {/* Weather cooldown */}
+          {weatherRemaining > 0 && (
+            <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+              ⏳{formatTime(weatherRemaining)}
+            </span>
+          )}
+
+          {/* Roll Weather button */}
+          {onRollWeather && (
+            <button
+              onClick={onRollWeather}
+              disabled={!weatherCooldownReady || isRollingWeather}
+              className="px-2 py-0.5 rounded text-[10px] font-semibold transition-colors"
+              style={{
+                backgroundColor: weatherCooldownReady && !isRollingWeather ? "var(--accent-blue)" : "var(--btn-disabled-bg)",
+                color: weatherCooldownReady && !isRollingWeather ? "#fff" : "var(--text-muted)",
+                cursor: weatherCooldownReady && !isRollingWeather ? "pointer" : "not-allowed",
+              }}
+            >
+              {isRollingWeather ? "⏳..." : "🎲 Weather"}
+            </button>
+          )}
+
+          {/* Roll Event button */}
+          {onRollSpecialEvent && (
+            <button
+              onClick={onRollSpecialEvent}
+              disabled={!eventCooldownReady || isRollingEvent}
+              className="px-2 py-0.5 rounded text-[10px] font-semibold transition-colors"
+              style={{
+                backgroundColor: eventCooldownReady && !isRollingEvent ? "var(--accent-purple)" : "var(--btn-disabled-bg)",
+                color: eventCooldownReady && !isRollingEvent ? "#fff" : "var(--text-muted)",
+                cursor: eventCooldownReady && !isRollingEvent ? "pointer" : "not-allowed",
+              }}
+            >
+              {isRollingEvent ? "⏳..." : "🎲 Event"}
+            </button>
+          )}
+
+          {/* Refresh button */}
           {onRefreshScores && (
             <button
               onClick={onRefreshScores}
               disabled={isRefreshingScores}
-              className="ml-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-colors"
+              className="px-2 py-0.5 rounded text-[10px] font-semibold transition-colors"
               style={{
                 backgroundColor: isRefreshingScores ? "var(--btn-disabled-bg)" : "var(--accent-blue)",
                 color: isRefreshingScores ? "var(--text-muted)" : "#fff",
@@ -286,7 +358,7 @@ export default function GameMap({ lanes, laneSquads, weather, specialEvent, addr
               }}
               title="Refresh hold scores & clean zombie squads (1 tx)"
             >
-              {isRefreshingScores ? "⏳ Refreshing..." : "♻️ Refresh Scores"}
+              {isRefreshingScores ? "⏳..." : "♻️ Refresh"}
             </button>
           )}
         </div>
@@ -299,11 +371,9 @@ export default function GameMap({ lanes, laneSquads, weather, specialEvent, addr
           pepeScore={lane.pepeScore}
           shibScore={lane.shibScore}
           segments={laneSquads[i] || Array.from({ length: 7 }, () => [])}
-          address={address}
           onResolveBattle={onResolveBattle}
           resolvingLane={resolvingLane}
-          onRetreatSquad={onRetreatSquad}
-          retreatingSquadId={retreatingSquadId}
+          killPot={killPots?.[i]}
         />
       ))}
     </div>

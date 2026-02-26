@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { FACTION, UNIT_EMOJI } from "../lib/constants";
+import { FACTION } from "../lib/constants";
 import { formatUSDC } from "../lib/constants";
-import type { HistoryRecord, BattleRecord, RetreatRecord } from "../hooks/useGameState";
+import type { HistoryRecord, BattleRecord } from "../hooks/useGameState";
 
 function timeAgo(timestamp: number): string {
   const now = Math.floor(Date.now() / 1000);
@@ -10,41 +10,6 @@ function timeAgo(timestamp: number): string {
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   return `${Math.floor(diff / 86400)}d ago`;
-}
-
-function RetreatEntry({ r }: { r: RetreatRecord }) {
-  const factionEmoji = r.faction === FACTION.PEPE ? "\uD83D\uDC38" : "\uD83E\uDD8A";
-  const unitEmoji = UNIT_EMOJI[r.unitType] || "";
-
-  return (
-    <div
-      className="rounded px-3 py-1.5 text-[11px]"
-      style={{ backgroundColor: "var(--game-bg)", opacity: 0.75 }}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="w-12 shrink-0" style={{ color: "var(--text-muted)" }}>
-            {r.timestamp > 0 ? timeAgo(r.timestamp) : "\u2014"}
-          </span>
-          <span style={{ color: "var(--text-secondary)" }}>L{r.laneId + 1}</span>
-          <span>
-            {factionEmoji} <span style={{ color: "var(--text-secondary)" }}>{"\uD83C\uDFC3"} Retreat</span>
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span style={{ color: "var(--text-secondary)" }}>
-            {r.units}{"\u00D7"}{unitEmoji}
-          </span>
-          <span style={{ color: "var(--accent-green)" }}>
-            {"\uD83D\uDCB0"}{formatUSDC(r.refund)}
-          </span>
-          <span style={{ color: "var(--accent-red)" }}>
-            -{formatUSDC(r.penalty)}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function BattleEntry({ b, expanded, onToggle }: { b: BattleRecord; expanded: boolean; onToggle: () => void }) {
@@ -201,21 +166,16 @@ export default function BattleLog({ history }: { history: HistoryRecord[] }) {
 
   return (
     <div className="card space-y-2">
-      <h3 className="text-sm font-bold" style={{ color: "var(--text-secondary)" }}>{"\u2694\uFE0F"} Recent Activity</h3>
+      <h3 className="text-sm font-bold" style={{ color: "var(--text-secondary)" }}>{"\u2694\uFE0F"} Recent Battles</h3>
       <div className="space-y-1.5">
-        {history.map((entry, i) => {
-          if (entry.type === "retreat") {
-            return <RetreatEntry key={`r-${entry.blockNumber}-${i}`} r={entry} />;
-          }
-          return (
-            <BattleEntry
-              key={`b-${entry.blockNumber}-${entry.laneId}-${i}`}
-              b={entry}
-              expanded={expandedIdx === i}
-              onToggle={() => setExpandedIdx(expandedIdx === i ? null : i)}
-            />
-          );
-        })}
+        {history.map((entry, i) => (
+          <BattleEntry
+            key={`b-${entry.blockNumber}-${entry.laneId}-${i}`}
+            b={entry}
+            expanded={expandedIdx === i}
+            onToggle={() => setExpandedIdx(expandedIdx === i ? null : i)}
+          />
+        ))}
       </div>
     </div>
   );

@@ -34,7 +34,6 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
 
     // Economics (basis points, sum = 10000)
     uint256 public constant SPLIT_KILL_REWARD    = 7_000; // 70%
-    uint256 public constant RETREAT_RETURN_BPS   = 8_000; // 80%
     uint256 public constant BPS_DENOM            = 10_000;
 
     // USDC pricing (6 decimals)
@@ -75,11 +74,6 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         uint8 laneId, UnitType unitType, uint32 count, uint256 cost
     );
     event SquadArrived(uint256 indexed squadId, uint8 laneId);
-    event Retreated(
-        uint256 indexed squadId, address indexed owner,
-        uint8 faction, uint8 laneId, uint8 unitType, uint32 units,
-        uint256 refund, uint256 penalty
-    );
     event BattleResolved(
         uint8 indexed laneId, Faction winner,
         uint256 totalSurvivors, uint256 winnerPot, uint256 loserEarned
@@ -373,45 +367,6 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         _processArrivals(laneId);
         require(_hasBothFactions(laneId), "No battle needed");
         _resolveBattle(laneId);
-    }
-
-    /// @notice Retreat a squad before it reaches the bastion. 20% penalty applied.
-    /// @param squadId The ID of the squad to retreat. Must be owned by msg.sender.
-    function retreat(uint256 squadId) external nonReentrant onlySeason {
-        Squad storage s = squads[squadId];
-        require(s.active && s.seasonId == currentSeasonId, "Invalid squad");
-        require(s.owner == msg.sender, "Not owner");
-        require(s.bastionEnteredAt == 0, "Already in bastion");
-
-        uint8 segment = getSquadSegment(squadId);
-        if (s.faction == Faction.PEPE) {
-            require(segment < BASTION_SEGMENT, "Cannot retreat from bastion");
-        } else {
-            require(segment > BASTION_SEGMENT, "Cannot retreat from bastion");
-        }
-
-        uint8 laneId = s.laneId;
-        uint256 cost = s.costPaid;
-
-        // Deactivate
-        s.active = false;
-
-        // Remove from marching
-        _removeFromArray(marchingSquads[laneId], squadId);
-
-        // Update total units
-        if (s.faction == Faction.PEPE) {
-            totalUnitsPEPE -= s.initialCount;
-        } else {
-            totalUnitsSHIB -= s.initialCount;
-        }
-
-        // Refund 80% via treasury
-        uint256 refund = (cost * RETREAT_RETURN_BPS) / BPS_DENOM;
-        uint256 penalty = cost - refund;
-        treasury.refundRetreat(msg.sender, refund, laneId, uint8(s.faction), cost);
-
-        emit Retreated(squadId, msg.sender, uint8(s.faction), laneId, uint8(s.unitType), s.initialCount, refund, penalty);
     }
 
     /// @notice Permissionless: refresh hold scores for a lane. Cleans zombie squads.
@@ -912,8 +867,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
                 unchecked { --len; }
                 continue;
             }
-            // Move to bastion
-            s.bastionEnteredAt = uint40(block.timestamp);
+            // Move to bastion (use computed arrival time, not block.timestamp, to preserve attrition continuity)
+            s.bastionEnteredAt = uint40(s.deployedAt + MARCH_DURATION);
             bastionSquads[laneId].push(sid);
             emit SquadArrived(sid, laneId);
             ids[i] = ids[len - 1];
@@ -1130,18 +1085,6 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
             unchecked { ++i; }
         }
         return minId;
-    }
-
-    function _removeFromArray(uint256[] storage arr, uint256 value) internal {
-        uint256 len = arr.length;
-        for (uint256 i = 0; i < len;) {
-            if (arr[i] == value) {
-                arr[i] = arr[len - 1];
-                arr.pop();
-                return;
-            }
-            unchecked { ++i; }
-        }
     }
 
     function _compactBastionSquads(uint8 laneId) internal {

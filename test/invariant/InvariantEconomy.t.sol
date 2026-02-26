@@ -25,14 +25,13 @@ contract InvariantEconomy is BaseTest {
         handler = new Handler(engine, treasury, usdc, owner, players);
 
         // Target only the handler's action functions (exclude snapshotHoldScores and getters)
-        bytes4[] memory selectors = new bytes4[](7);
+        bytes4[] memory selectors = new bytes4[](6);
         selectors[0] = Handler.deploy.selector;
         selectors[1] = Handler.arrive.selector;
-        selectors[2] = Handler.retreat.selector;
-        selectors[3] = Handler.withdraw.selector;
-        selectors[4] = Handler.advanceTime.selector;
-        selectors[5] = Handler.refreshHoldScore.selector;
-        selectors[6] = Handler.changeWeather.selector;
+        selectors[2] = Handler.withdraw.selector;
+        selectors[3] = Handler.advanceTime.selector;
+        selectors[4] = Handler.refreshHoldScore.selector;
+        selectors[5] = Handler.changeWeather.selector;
         targetSelector(FuzzSelector({
             addr: address(handler),
             selectors: selectors
@@ -56,8 +55,8 @@ contract InvariantEconomy is BaseTest {
     //  Kill pots + pending rewards (the claimable obligations)
     //  must never exceed treasury USDC balance.
     //  Note: Full solvency check (including season treasuries)
-    //  can show a deficit when retreat underflow guards absorb
-    //  losses — this is a known design decision (covered by seeds).
+    //  may show a deficit if rounding absorbs small losses —
+    //  this is a known design decision (covered by seeds).
     // ════════════════════════════════════════════
 
     function invariant_claimableSolvency() external view {
@@ -145,7 +144,6 @@ contract InvariantEconomy is BaseTest {
         // Useful to verify the handler is exercising all paths
         handler.calls_deploy();
         handler.calls_arrive();
-        handler.calls_retreat();
         handler.calls_withdraw();
         handler.calls_advanceTime();
     }

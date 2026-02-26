@@ -3,13 +3,13 @@ import { type Address } from "viem";
 // ── Contract addresses (Base Sepolia — update after deployment) ──
 export const ADDRESSES = {
   gameEngine: (import.meta.env.VITE_GAME_ENGINE ||
-    "0x0000000000000000000000000000000000000000") as Address,
+    "0xe8A5fAd5F2D12797Ae8Ac180BB6C077e0a6aD5C0") as Address,
   treasury: (import.meta.env.VITE_TREASURY ||
-    "0x0000000000000000000000000000000000000000") as Address,
+    "0x11e49674CE039A9fb15210e5258e0F062eF029E2") as Address,
   seasonNFT: (import.meta.env.VITE_SEASON_NFT ||
-    "0x0000000000000000000000000000000000000000") as Address,
+    "0x9b6Fcf35e4728D78107F9D9295d40629CE3c9Ce4") as Address,
   usdc: (import.meta.env.VITE_USDC ||
-    "0xb64591F38292dA40375FC9f3BAf231f26e2c3903") as Address, // MockUSDC v8.1
+    "0xb64591F38292dA40375FC9f3BAf231f26e2c3903") as Address, // MockUSDC v8.2
 } as const;
 
 // ── GameEngine ABI (minimal — only functions used by frontend) ──
@@ -225,13 +225,6 @@ export const GAME_ENGINE_ABI = [
     outputs: [],
   },
   {
-    name: "retreat",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [{ name: "squadId", type: "uint256" }],
-    outputs: [],
-  },
-  {
     name: "resolveBattle",
     type: "function",
     stateMutability: "nonpayable",
@@ -293,20 +286,6 @@ export const GAME_ENGINE_ABI = [
       { indexed: false, name: "shibUnitsStart", type: "uint256" },
       { indexed: false, name: "pepeCombat", type: "uint256" },
       { indexed: false, name: "shibCombat", type: "uint256" },
-    ],
-  },
-  {
-    name: "Retreated",
-    type: "event",
-    inputs: [
-      { indexed: true, name: "squadId", type: "uint256" },
-      { indexed: true, name: "owner", type: "address" },
-      { indexed: false, name: "faction", type: "uint8" },
-      { indexed: false, name: "laneId", type: "uint8" },
-      { indexed: false, name: "unitType", type: "uint8" },
-      { indexed: false, name: "units", type: "uint32" },
-      { indexed: false, name: "refund", type: "uint256" },
-      { indexed: false, name: "penalty", type: "uint256" },
     ],
   },
 ] as const;

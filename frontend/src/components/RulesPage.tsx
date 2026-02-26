@@ -137,15 +137,6 @@ export default function RulesPage({ onBack }: { onBack: () => void }) {
           </ul>
         </Section>
 
-        {/* Retreat */}
-        <Section title="🏃 Retreat">
-          <ul className="list-disc pl-5 space-y-1">
-            <li>You can retreat units <B>before</B> they reach the bastion.</li>
-            <li>Refund: <B>80%</B> of the original deployment cost.</li>
-            <li>The remaining 20% stays in the kill pot.</li>
-          </ul>
-        </Section>
-
         {/* Treasury & Economy */}
         <Section title="💰 Treasury & Economy">
           <p className="mb-2">Every USDC spent on recruitment is split:</p>
