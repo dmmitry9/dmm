@@ -284,7 +284,7 @@ export default function GameMap({ lanes, laneSquads, weather, specialEvent, addr
                 color: isRefreshingScores ? "var(--text-muted)" : "#fff",
                 cursor: isRefreshingScores ? "not-allowed" : "pointer",
               }}
-              title="Refresh hold scores & clean zombie squads (3 tx)"
+              title="Refresh hold scores & clean zombie squads (1 tx)"
             >
               {isRefreshingScores ? "⏳ Refreshing..." : "♻️ Refresh Scores"}
             </button>

@@ -164,23 +164,6 @@ export default function SeasonInfo({
         </div>
       </div>
 
-      {/* Per-Lane Hold Scores */}
-      {laneHoldScores && (
-        <div className="p-3 rounded-lg space-y-2" style={{ backgroundColor: "var(--panel-bg)" }}>
-          <span className="text-xs font-bold" style={{ color: "var(--accent-yellow-bold)" }}>🏰 Hold Scores</span>
-          {laneHoldScores.map((lane, i) => (
-            <div key={i} className="flex items-center justify-between text-xs">
-              <span style={{ color: "var(--text-secondary)" }}>Lane {i + 1}</span>
-              <span className="font-mono">
-                <span className="text-pepe">🐸 {lane.pepe.toString()}</span>
-                {" — "}
-                <span className="text-shib">{lane.shib.toString()} 🦊</span>
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Weather + Event */}
       <WeatherEventPanel
         weather={weather}

@@ -422,6 +422,14 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         _updateHoldScore(laneId);
     }
 
+    /// @notice Permissionless: refresh all lanes in one transaction.
+    function refreshAllLanes() external {
+        for (uint8 i = 0; i < NUM_LANES; i++) {
+            _processArrivals(i);
+            _updateHoldScore(i);
+        }
+    }
+
     /// @notice Permissionless: clean zombie marching squads for a lane.
     /// @param laneId Lane to clean (0–2).
     function cleanupMarchingZombies(uint8 laneId) external {

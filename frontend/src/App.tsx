@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { ADDRESSES, GAME_ENGINE_ABI } from "./config/contracts";
 import ConnectWallet from "./components/ConnectWallet";
@@ -155,28 +155,24 @@ export default function App() {
     });
   };
 
-  // Refresh hold scores (all 3 lanes)
+  // Refresh hold scores (all 3 lanes in one tx)
   const [refreshingScores, setRefreshingScores] = useState(false);
-  const { writeContractAsync: refreshScoresAsync } = useWriteContract();
+  const { writeContract: refreshAllLanes, data: refreshTx } = useWriteContract();
+  const { isSuccess: refreshSuccess } = useWaitForTransactionReceipt({ hash: refreshTx });
 
-  const handleRefreshScores = useCallback(async () => {
-    setRefreshingScores(true);
-    try {
-      for (let lane = 0; lane < 3; lane++) {
-        await refreshScoresAsync({
-          address: ADDRESSES.gameEngine,
-          abi: GAME_ENGINE_ABI,
-          functionName: "refreshHoldScore",
-          args: [lane],
-        });
-      }
-      await new Promise((r) => setTimeout(r, 4000));
-      gameState.refetch();
-    } catch {
-      // user rejected or tx failed
-    }
+  if (refreshSuccess && refreshingScores) {
     setRefreshingScores(false);
-  }, [refreshScoresAsync, gameState]);
+    gameState.refetch();
+  }
+
+  const handleRefreshScores = () => {
+    setRefreshingScores(true);
+    refreshAllLanes({
+      address: ADDRESSES.gameEngine,
+      abi: GAME_ENGINE_ABI,
+      functionName: "refreshAllLanes",
+    });
+  };
 
   // Roll weather
   const [rollingWeather, setRollingWeather] = useState(false);

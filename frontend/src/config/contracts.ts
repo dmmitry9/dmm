@@ -9,7 +9,7 @@ export const ADDRESSES = {
   seasonNFT: (import.meta.env.VITE_SEASON_NFT ||
     "0x0000000000000000000000000000000000000000") as Address,
   usdc: (import.meta.env.VITE_USDC ||
-    "0x69e1eE9F18e1Eb9452fDC461343b85F75bca9c4e") as Address, // MockUSDC v8
+    "0xb64591F38292dA40375FC9f3BAf231f26e2c3903") as Address, // MockUSDC v8.1
 } as const;
 
 // ── GameEngine ABI (minimal — only functions used by frontend) ──
@@ -215,6 +215,13 @@ export const GAME_ENGINE_ABI = [
     type: "function",
     stateMutability: "nonpayable",
     inputs: [{ name: "laneId", type: "uint8" }],
+    outputs: [],
+  },
+  {
+    name: "refreshAllLanes",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [],
     outputs: [],
   },
   {
