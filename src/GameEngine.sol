@@ -15,19 +15,19 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     //                 CONSTANTS
     // ═══════════════════════════════════════════
 
-    uint256 public constant SEGMENT_DURATION       = 3 minutes;  // 10x speed (was 30 min)
-    uint256 public constant MARCH_DURATION         = 9 minutes;  // 10x speed (was 90 min)
-    uint256 public constant ATTRITION_TICK         = 6 minutes;  // 10x speed: 6 min = 1 "hour" of attrition (was 1 hour)
-    uint256 public constant WEATHER_INTERVAL       = 36 minutes; // 10x speed (was 6 hours)
-    uint256 public constant SPECIAL_EVENT_DURATION = 24 minutes; // 5x speed (was 2 hours)
-    uint256 public constant SEASON_DURATION        = 60480;      // 10x speed: ~16.8h (was 7 days)
+    uint256 public constant SEGMENT_DURATION       = 1 minutes;  // 30x speed (was 30 min)
+    uint256 public constant MARCH_DURATION         = 3 minutes;  // 30x speed (was 90 min)
+    uint256 public constant ATTRITION_TICK         = 2 minutes;  // 30x speed: 2 min = 1 "hour" of attrition (was 1 hour)
+    uint256 public constant WEATHER_INTERVAL       = 12 minutes; // 30x speed (was 6 hours)
+    uint256 public constant SPECIAL_EVENT_DURATION = 8 minutes;  // 15x speed (was 2 hours)
+    uint256 public constant SEASON_DURATION        = 20160;      // 30x speed: ~5.6h (was 7 days)
     uint8   public constant BASTION_SEGMENT        = 3;
     uint8   public constant PEPE_START_SEGMENT     = 0;
     uint8   public constant SHIB_START_SEGMENT     = 6;
     uint8   public constant NUM_LANES              = 3;
 
     // Combat multipliers (fixed-point ×1000)
-    uint256 public constant RPS_WIN_MULT   = 1_500;
+    uint256 public constant RPS_WIN_MULT   = 1_800;
     uint256 public constant RPS_DENOM      = 1_000;
     uint256 public constant WEATHER_BONUS  = 1_200;
     uint256 public constant WEATHER_DENOM  = 1_000;
@@ -90,7 +90,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         uint256 pepeCombat, uint256 shibCombat
     );
     event SeasonStarted(uint256 indexed seasonId, uint256 startTime);
-    event SeasonEnded(uint256 indexed seasonId, Faction winner, address[3] top3);
+    event SeasonEnded(uint256 indexed seasonId, Faction winner);
     event WeatherChanged(Weather weather);
     event SpecialEventStarted(SpecialEvent evt, uint256 endsAt);
     event HoldScoreUpdated(uint8 laneId, uint128 scorePEPE, uint128 scoreSHIB);
@@ -140,6 +140,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
 
     modifier onlySeason() {
         require(seasonActive, "No active season");
+        require(block.timestamp < seasonStartTime + SEASON_DURATION, "Season expired");
         _;
     }
 
@@ -313,6 +314,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         require(unitType != UnitType.NONE, "Invalid unit type");
         require(faction == Faction.PEPE || faction == Faction.SHIB, "Invalid faction");
 
+        _processArrivals(laneId);
+
         // Lock player to faction for this season (reset each season)
         if (playerFactionSeason[msg.sender] != currentSeasonId) {
             playerFaction[msg.sender] = faction;
@@ -350,6 +353,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
             deployedAt: uint40(block.timestamp),
             bastionEnteredAt: 0,
             initialCount: count,
+            originalCount: count,
             costPaid: uint96(cost),
             seasonId: uint32(currentSeasonId)
         });
@@ -362,60 +366,11 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         emit UnitsDeployed(squadId, msg.sender, faction, laneId, unitType, count, cost);
     }
 
-    /// @notice Mark a squad as arrived at the bastion. Permissionless.
-    /// @param squadId The ID of the squad that has completed its march.
-    function arrive(uint256 squadId) external nonReentrant onlySeason {
-        Squad storage s = squads[squadId];
-        require(s.active && s.seasonId == currentSeasonId, "Invalid squad");
-        require(s.bastionEnteredAt == 0, "Already arrived");
-        require(block.timestamp >= s.deployedAt + MARCH_DURATION, "Still marching");
-
-        uint8 laneId = s.laneId;
-
-        // Zombie check: if attrition reduced to 0, clean up instead of arriving
-        uint256 eff = _getEffectiveUnitsFromRef(s);
-        if (eff == 0) {
-            uint256 attritionPot = (uint256(s.costPaid) * SPLIT_KILL_REWARD) / BPS_DENOM;
-            s.active = false;
-            _removeFromArray(marchingSquads[laneId], squadId);
-            if (s.faction == Faction.PEPE) {
-                if (s.initialCount <= totalUnitsPEPE) totalUnitsPEPE -= s.initialCount;
-                else totalUnitsPEPE = 0;
-            } else {
-                if (s.initialCount <= totalUnitsSHIB) totalUnitsSHIB -= s.initialCount;
-                else totalUnitsSHIB = 0;
-            }
-            treasury.transferAttritionPotToTreasury(laneId, uint8(s.faction), attritionPot);
-            emit ZombieCleaned(squadId, attritionPot);
-            return;
-        }
-
-        // Step 1: Update hold score BEFORE modifying bastion composition
-        _updateHoldScore(laneId);
-
-        // Step 2: Remove from marching squads
-        _removeFromArray(marchingSquads[laneId], squadId);
-
-        // Step 3: Add to bastion squads
-        bastionSquads[laneId].push(squadId);
-        s.bastionEnteredAt = uint40(block.timestamp);
-
-        // Step 4: Update contested state
-        bool bothPresent = _hasBothFactions(laneId);
-        bastions[laneId].contestedAtUpdate = bothPresent;
-
-        emit SquadArrived(squadId, laneId);
-
-        // Step 5: If both factions present, trigger battle
-        if (bothPresent) {
-            _resolveBattle(laneId);
-        }
-    }
-
     /// @notice Public trigger for battle resolution. Permissionless.
     /// @param laneId Lane to resolve (0–2). Requires both factions present.
     function resolveBattle(uint8 laneId) external nonReentrant onlySeason {
         require(laneId < NUM_LANES, "Invalid lane");
+        _processArrivals(laneId);
         require(_hasBothFactions(laneId), "No battle needed");
         _resolveBattle(laneId);
     }
@@ -463,6 +418,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     /// @param laneId Lane to refresh (0–2).
     function refreshHoldScore(uint8 laneId) external {
         require(laneId < NUM_LANES, "Invalid lane");
+        _processArrivals(laneId);
         _updateHoldScore(laneId);
     }
 
@@ -484,7 +440,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
             }
             uint256 eff = _getEffectiveUnitsFromRef(s);
             if (eff == 0) {
-                uint256 attritionPot = (uint256(s.costPaid) * SPLIT_KILL_REWARD) / BPS_DENOM;
+                uint256 fullKillPot = (uint256(s.costPaid) * SPLIT_KILL_REWARD) / BPS_DENOM;
+                uint256 attritionPot = s.originalCount > 0 ? (fullKillPot * uint256(s.initialCount)) / uint256(s.originalCount) : fullKillPot;
                 s.active = false;
                 if (s.faction == Faction.PEPE) {
                     if (s.initialCount <= totalUnitsPEPE) totalUnitsPEPE -= s.initialCount;
@@ -521,6 +478,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     function setSpecialEvent(SpecialEvent evt) external override onlyTreasury {
         // Snapshot all bastions before event change to lock in attrition
         for (uint8 i = 0; i < NUM_LANES; i++) {
+            _processArrivals(i);
             _updateHoldScore(i);
         }
         currentSpecialEvent = evt;
@@ -547,6 +505,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         require(block.timestamp >= specialEventEndsAt, "Event still active");
         // Snapshot all bastions before event change to lock in attrition
         for (uint8 i = 0; i < NUM_LANES; i++) {
+            _processArrivals(i);
             _updateHoldScore(i);
         }
         uint256 rand = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), block.timestamp, msg.sender)));
@@ -564,33 +523,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     //           SEASON MANAGEMENT
     // ═══════════════════════════════════════════
 
-    /// @notice Start a new season. Resets all lane states, counters, and weather.
-    function startSeason() external onlyOwner {
-        require(!seasonActive, "Season already active");
-
-        currentSeasonId++;
-        seasonStartTime = block.timestamp;
-        seasonActive = true;
-
-        // Reset counters
-        totalUnitsPEPE = 0;
-        totalUnitsSHIB = 0;
-        currentWeather = Weather.NONE;
-        currentSpecialEvent = SpecialEvent.NONE;
-
-        // Clear bastion arrays and states for all lanes
-        for (uint8 i = 0; i < NUM_LANES; i++) {
-            delete bastionSquads[i];
-            delete marchingSquads[i];
-            bastions[i] = BastionState(0, false, 0, 0);
-        }
-
-        emit SeasonStarted(currentSeasonId, seasonStartTime);
-    }
-
-    /// @notice End the current season. Determines winner by total hold score, finalizes treasury, mints NFTs.
-    /// @param top3 Addresses of the top-3 players for commemorative NFTs.
-    function endSeason(address[3] calldata top3) external onlyOwner {
+    /// @notice End the current season. Permissionless — anyone can call after duration expires.
+    function endSeason() external {
         require(seasonActive, "No active season");
         require(block.timestamp >= seasonStartTime + SEASON_DURATION, "Too early");
 
@@ -601,6 +535,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         uint256 shibTotal;
         uint256[3] memory laneHoldScores;
         for (uint8 i = 0; i < NUM_LANES; i++) {
+            _processArrivals(i);
             _updateHoldScore(i);
             laneHoldScores[i] = uint256(bastions[i].holdScorePEPE) + uint256(bastions[i].holdScoreSHIB);
             pepeTotal += bastions[i].holdScorePEPE;
@@ -619,12 +554,51 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         uint256 totalHoldScore = pepeTotal + shibTotal;
         treasury.finalizeSeason(currentSeasonId, totalHoldScore, uint8(winner), laneHoldScores);
 
-        // Mint commemorative NFTs for top-3 players
-        if (address(seasonNFT) != address(0)) {
-            seasonNFT.mintSeasonRewards(currentSeasonId, uint8(winner), top3);
+        emit SeasonEnded(currentSeasonId, winner);
+    }
+
+    /// @notice Bootstrap season 1. Owner-only.
+    function startSeason() external onlyOwner {
+        require(!seasonActive, "Season already active");
+
+        currentSeasonId++;
+        seasonStartTime = block.timestamp;
+        seasonActive = true;
+
+        totalUnitsPEPE = 0;
+        totalUnitsSHIB = 0;
+        currentWeather = Weather.NONE;
+        currentSpecialEvent = SpecialEvent.NONE;
+
+        for (uint8 i = 0; i < NUM_LANES; i++) {
+            delete bastionSquads[i];
+            delete marchingSquads[i];
+            bastions[i] = BastionState(0, false, 0, 0);
         }
 
-        emit SeasonEnded(currentSeasonId, winner, top3);
+        emit SeasonStarted(currentSeasonId, seasonStartTime);
+    }
+
+    /// @notice Start the next season. Permissionless — anyone can call after season ended.
+    function startNextSeason() external {
+        require(!seasonActive, "Season already active");
+
+        currentSeasonId++;
+        seasonStartTime = block.timestamp;
+        seasonActive = true;
+
+        totalUnitsPEPE = 0;
+        totalUnitsSHIB = 0;
+        currentWeather = Weather.NONE;
+        currentSpecialEvent = SpecialEvent.NONE;
+
+        for (uint8 i = 0; i < NUM_LANES; i++) {
+            delete bastionSquads[i];
+            delete marchingSquads[i];
+            bastions[i] = BastionState(0, false, 0, 0);
+        }
+
+        emit SeasonStarted(currentSeasonId, seasonStartTime);
     }
 
     // ═══════════════════════════════════════════
@@ -893,6 +867,53 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         emit BattleResolved(laneId, winnerFaction, totalSurvivors, winnerPot, loserEarned);
     }
 
+    /// @notice Process all marching squads that have completed their march for a lane.
+    function _processArrivals(uint8 laneId) internal {
+        uint256[] storage ids = marchingSquads[laneId];
+        uint256 i = 0;
+        uint256 len = ids.length;
+        while (i < len) {
+            uint256 sid = ids[i];
+            Squad storage s = squads[sid];
+            if (!s.active || s.seasonId != currentSeasonId) {
+                ids[i] = ids[len - 1];
+                ids.pop();
+                unchecked { --len; }
+                continue;
+            }
+            if (block.timestamp < s.deployedAt + MARCH_DURATION) {
+                unchecked { ++i; }
+                continue;
+            }
+            uint256 eff = _getEffectiveUnitsFromRef(s);
+            if (eff == 0) {
+                uint256 fullKillPot = (uint256(s.costPaid) * SPLIT_KILL_REWARD) / BPS_DENOM;
+                uint256 attritionPot = s.originalCount > 0 ? (fullKillPot * uint256(s.initialCount)) / uint256(s.originalCount) : fullKillPot;
+                s.active = false;
+                if (s.faction == Faction.PEPE) {
+                    if (s.initialCount <= totalUnitsPEPE) totalUnitsPEPE -= s.initialCount;
+                    else totalUnitsPEPE = 0;
+                } else {
+                    if (s.initialCount <= totalUnitsSHIB) totalUnitsSHIB -= s.initialCount;
+                    else totalUnitsSHIB = 0;
+                }
+                treasury.transferAttritionPotToTreasury(laneId, uint8(s.faction), attritionPot);
+                emit ZombieCleaned(sid, attritionPot);
+                ids[i] = ids[len - 1];
+                ids.pop();
+                unchecked { --len; }
+                continue;
+            }
+            // Move to bastion
+            s.bastionEnteredAt = uint40(block.timestamp);
+            bastionSquads[laneId].push(sid);
+            emit SquadArrived(sid, laneId);
+            ids[i] = ids[len - 1];
+            ids.pop();
+            unchecked { --len; }
+        }
+    }
+
     // ═══════════════════════════════════════════
     //          INTERNAL: HOLD SCORE
     // ═══════════════════════════════════════════
@@ -944,7 +965,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
                         }
                     }
                 }
-                uint256 attritionPot = (uint256(s.costPaid) * SPLIT_KILL_REWARD) / BPS_DENOM;
+                uint256 fullKillPot = (uint256(s.costPaid) * SPLIT_KILL_REWARD) / BPS_DENOM;
+                uint256 attritionPot = s.originalCount > 0 ? (fullKillPot * uint256(s.initialCount)) / uint256(s.originalCount) : fullKillPot;
                 s.active = false;
                 if (s.faction == Faction.PEPE) {
                     if (s.initialCount <= totalUnitsPEPE) totalUnitsPEPE -= s.initialCount;
@@ -966,6 +988,12 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
             // Snapshot attrition into squad state — makes decay permanent.
             // Prevents units from "recovering" when a special event ends.
             if (eff < s.initialCount) {
+                uint256 unitsLost = uint256(s.initialCount) - eff;
+                uint256 fullKP = (uint256(s.costPaid) * SPLIT_KILL_REWARD) / BPS_DENOM;
+                uint256 transferAmt = s.originalCount > 0 ? (fullKP * unitsLost) / uint256(s.originalCount) : 0;
+                if (transferAmt > 0) {
+                    treasury.transferAttritionPotToTreasury(laneId, uint8(s.faction), transferAmt);
+                }
                 s.initialCount = uint32(eff);
                 s.bastionEnteredAt = uint40(block.timestamp);
             }
@@ -1136,7 +1164,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
             if (effective[i] == 0) {
                 Squad storage s = squads[ids[i]];
                 if (s.active) {
-                    uint256 attritionPot = (uint256(s.costPaid) * SPLIT_KILL_REWARD) / BPS_DENOM;
+                    uint256 fullKillPot = (uint256(s.costPaid) * SPLIT_KILL_REWARD) / BPS_DENOM;
+                    uint256 attritionPot = s.originalCount > 0 ? (fullKillPot * uint256(s.initialCount)) / uint256(s.originalCount) : fullKillPot;
                     s.active = false;
 
                     if (s.faction == Faction.PEPE) {

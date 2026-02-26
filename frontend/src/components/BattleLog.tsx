@@ -13,7 +13,7 @@ function timeAgo(timestamp: number): string {
 }
 
 function RetreatEntry({ r }: { r: RetreatRecord }) {
-  const factionEmoji = r.faction === FACTION.PEPE ? "\uD83D\uDC38" : "\uD83D\uDC15";
+  const factionEmoji = r.faction === FACTION.PEPE ? "\uD83D\uDC38" : "\uD83E\uDD8A";
   const unitEmoji = UNIT_EMOJI[r.unitType] || "";
 
   return (
@@ -49,8 +49,8 @@ function RetreatEntry({ r }: { r: RetreatRecord }) {
 
 function BattleEntry({ b, expanded, onToggle }: { b: BattleRecord; expanded: boolean; onToggle: () => void }) {
   const isPepe = b.winner === FACTION.PEPE;
-  const winEmoji = isPepe ? "\uD83D\uDC38" : "\uD83D\uDC15";
-  const loseEmoji = isPepe ? "\uD83D\uDC15" : "\uD83D\uDC38";
+  const winEmoji = isPepe ? "\uD83D\uDC38" : "\uD83E\uDD8A";
+  const loseEmoji = isPepe ? "\uD83E\uDD8A" : "\uD83D\uDC38";
   const winColor = isPepe ? "text-pepe" : "text-shib";
 
   const winnerUnitsStart = isPepe ? b.pepeUnitsStart : b.shibUnitsStart;
@@ -83,7 +83,7 @@ function BattleEntry({ b, expanded, onToggle }: { b: BattleRecord; expanded: boo
         </div>
         <div className="flex items-center gap-3">
           <span style={{ color: "var(--text-secondary)" }}>
-            {"\uD83D\uDC38"}{b.pepeUnitsStart} vs {"\uD83D\uDC15"}{b.shibUnitsStart}
+            {"\uD83D\uDC38"}{b.pepeUnitsStart} vs {"\uD83E\uDD8A"}{b.shibUnitsStart}
           </span>
           <span className="font-semibold" style={{ color: "var(--accent-yellow)" }}>
             {"\uD83D\uDCB0"} {formatUSDC(b.winnerPot + b.loserEarned)}
@@ -109,7 +109,7 @@ function BattleEntry({ b, expanded, onToggle }: { b: BattleRecord; expanded: boo
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-pepe font-semibold">{"\uD83D\uDC38"} {b.pepeUnitsStart}</span>
                 <span style={{ color: "var(--text-muted)" }}>vs</span>
-                <span className="text-shib font-semibold">{"\uD83D\uDC15"} {b.shibUnitsStart}</span>
+                <span className="text-shib font-semibold">{"\uD83E\uDD8A"} {b.shibUnitsStart}</span>
               </div>
             </div>
             <div>

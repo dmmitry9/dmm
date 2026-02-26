@@ -25,8 +25,8 @@ contract BaseTest is Test {
     address public dave     = address(0xDA7E);
     address public eve      = address(0xE7E);
 
-    uint256 constant MARCH_DURATION  = 9 minutes;
-    uint256 constant SEASON_DURATION = 60480; // 7 days / 10
+    uint256 constant MARCH_DURATION  = 3 minutes;
+    uint256 constant SEASON_DURATION = 20160;
     uint256 constant BPS_DENOM       = 10_000;
 
     function setUp() public virtual {
@@ -120,7 +120,7 @@ contract BaseTest is Test {
         squadId = _deploySquad(player, laneId, ut, f, count);
         uint256 deployTime = block.timestamp;
         _warpToMarchComplete(deployTime);
-        engine.arrive(squadId);
+        engine.refreshHoldScore(laneId);
     }
 
     /// @dev Deploy both factions to same lane at same time, warp, arrive both.
@@ -140,14 +140,13 @@ contract BaseTest is Test {
         uint256 deployTime = block.timestamp;
         _warpToMarchComplete(deployTime);
 
-        engine.arrive(pepeSquad);  // no battle yet (single faction)
-        engine.arrive(shibSquad);  // triggers _resolveBattle (both factions)
+        engine.resolveBattle(laneId);  // triggers _processArrivals → _resolveBattle
     }
 
-    function _endSeason(address[3] memory top3) internal {
+    function _endSeason() internal {
         _warpToSeasonEnd();
         vm.prank(owner);
-        engine.endSeason(top3);
+        engine.endSeason();
     }
 
     function _mintAndApprove(address who, uint256 amount) internal {

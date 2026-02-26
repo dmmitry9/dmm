@@ -36,7 +36,7 @@ contract Handler is Test {
     // Track deployed squads for arrive/retreat
     uint256[] public deployedSquadIds;
 
-    uint256 constant MARCH_DURATION = 9 minutes;
+    uint256 constant MARCH_DURATION = 3 minutes;
 
     constructor(
         GameEngine _engine,
@@ -104,10 +104,9 @@ contract Handler is Test {
         // Warp past march duration to ensure squads can arrive
         _warpForwardSafe(MARCH_DURATION + 1 minutes);
 
-        uint256 idx = bound(seed, 0, deployedSquadIds.length - 1);
-        uint256 squadId = deployedSquadIds[idx];
+        uint8 laneId = uint8(bound(seed, 0, 2));
 
-        try engine.arrive(squadId) {
+        try engine.refreshHoldScore(laneId) {
             calls_arrive++;
         } catch {}
     }
@@ -118,7 +117,7 @@ contract Handler is Test {
         uint256 idx = bound(seed, 0, deployedSquadIds.length - 1);
         uint256 squadId = deployedSquadIds[idx];
 
-        (address squadOwner,,,, bool active, , uint40 bastionEnteredAt,,,) = engine.squads(squadId);
+        (address squadOwner,,,, bool active, , uint40 bastionEnteredAt,,,,) = engine.squads(squadId);
         if (!active || bastionEnteredAt > 0) return;
 
         vm.prank(squadOwner);

@@ -1,9 +1,9 @@
 // ── Game constants (must match Solidity) ──
 
-export const SEGMENT_DURATION = 3 * 60; // 3 minutes in seconds (10x speed)
-export const MARCH_DURATION = 9 * 60; // 9 minutes (10x speed)
-export const SEASON_DURATION = 60480; // ~16.8 hours (10x speed)
-export const WEATHER_INTERVAL = 36 * 60; // 36 minutes (10x speed, was 6 hours)
+export const SEGMENT_DURATION = 1 * 60; // 1 minute in seconds (30x speed)
+export const MARCH_DURATION = 3 * 60; // 3 minutes (30x speed)
+export const SEASON_DURATION = 20160; // ~5.6 hours (30x speed)
+export const WEATHER_INTERVAL = 12 * 60; // 12 minutes (30x speed, was 6 hours)
 export const BASTION_SEGMENT = 3;
 export const NUM_LANES = 3;
 

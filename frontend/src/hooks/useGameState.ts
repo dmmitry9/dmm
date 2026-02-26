@@ -379,7 +379,7 @@ export function useLaneSquads(): LaneSquads {
 
     for (let i = 0; i < squadIds.length; i++) {
       const squadData = detailResults[i * 3]?.result as
-        | [string, number, number, number, boolean, number, number, number, bigint, number]
+        | [string, number, number, number, boolean, number, number, number, number, bigint, number]
         | undefined;
       const segment = Number(detailResults[i * 3 + 1]?.result ?? 0);
       const effective = Number(detailResults[i * 3 + 2]?.result ?? 0);
@@ -388,7 +388,7 @@ export function useLaneSquads(): LaneSquads {
 
       const lane = squadMeta[i].lane;
       const deployedAt = Number(squadData[5]);
-      const arrivalTime = deployedAt + 9 * 60; // MARCH_DURATION = 9 minutes (10x speed)
+      const arrivalTime = deployedAt + 3 * 60; // MARCH_DURATION = 3 minutes (30x speed)
       if (lane < NUM_LANES && segment < 7) {
         result[lane][segment].push({
           squadId: squadIds[i],

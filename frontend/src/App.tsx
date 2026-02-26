@@ -97,23 +97,41 @@ export default function App() {
     });
   };
 
-  // Arrive squads at bastion
-  const [arrivingSquadId, setArrivingSquadId] = useState<number | null>(null);
-  const { writeContract: arriveSquad, data: arriveTx } = useWriteContract();
-  const { isSuccess: arriveSuccess } = useWaitForTransactionReceipt({ hash: arriveTx });
+  // End season
+  const [endingSeason, setEndingSeason] = useState(false);
+  const { writeContract: endSeasonTx, data: endSeasonHash } = useWriteContract();
+  const { isSuccess: endSeasonSuccess } = useWaitForTransactionReceipt({ hash: endSeasonHash });
 
-  if (arriveSuccess && arrivingSquadId !== null) {
-    setArrivingSquadId(null);
+  if (endSeasonSuccess && endingSeason) {
+    setEndingSeason(false);
     gameState.refetch();
   }
 
-  const handleArriveSquad = (squadId: number) => {
-    setArrivingSquadId(squadId);
-    arriveSquad({
+  const handleEndSeason = () => {
+    setEndingSeason(true);
+    endSeasonTx({
       address: ADDRESSES.gameEngine,
       abi: GAME_ENGINE_ABI,
-      functionName: "arrive",
-      args: [BigInt(squadId)],
+      functionName: "endSeason",
+    });
+  };
+
+  // Start next season
+  const [startingNextSeason, setStartingNextSeason] = useState(false);
+  const { writeContract: startNextSeasonTx, data: startNextSeasonHash } = useWriteContract();
+  const { isSuccess: startNextSeasonSuccess } = useWaitForTransactionReceipt({ hash: startNextSeasonHash });
+
+  if (startNextSeasonSuccess && startingNextSeason) {
+    setStartingNextSeason(false);
+    gameState.refetch();
+  }
+
+  const handleStartNextSeason = () => {
+    setStartingNextSeason(true);
+    startNextSeasonTx({
+      address: ADDRESSES.gameEngine,
+      abi: GAME_ENGINE_ABI,
+      functionName: "startNextSeason",
     });
   };
 
@@ -181,6 +199,9 @@ export default function App() {
     ? now >= gameState.weatherSetAt + WEATHER_INTERVAL
     : true;
   const eventCooldownReady = gameState.specialEvent === 0 || now >= gameState.specialEventEndsAt;
+  const seasonExpired = gameState.seasonActive && gameState.seasonStartTime
+    ? now >= Number(gameState.seasonStartTime) + 20160
+    : false;
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--game-bg)", color: "var(--text-primary)" }}>
@@ -225,8 +246,6 @@ export default function App() {
             address={address}
             onResolveBattle={handleResolveBattle}
             resolvingLane={resolvingLane}
-            onArriveSquad={handleArriveSquad}
-            arrivingSquadId={arrivingSquadId}
             onRetreatSquad={address ? handleRetreatSquad : undefined}
             retreatingSquadId={retreatingSquadId}
           />
@@ -243,12 +262,12 @@ export default function App() {
               label="SHIB Forces"
               count={effectiveSHIB}
               color="shib"
-              emoji="🐕"
+              emoji="🦊"
             />
             <div className="card text-center">
               <span className="text-xs block" style={{ color: "var(--text-muted)" }}>RPS System</span>
               <div className="text-lg mt-1">⚔️ &gt; 🔱 &gt; 🐴 &gt; ⚔️</div>
-              <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>1.5× advantage</span>
+              <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>1.8× advantage</span>
             </div>
           </div>
 
@@ -290,6 +309,12 @@ export default function App() {
             isRollingEvent={rollingEvent}
             playerHoldScore={playerHoldScore}
             playerLaneScores={playerLaneScores}
+            laneHoldScores={lanes}
+            onEndSeason={address ? handleEndSeason : undefined}
+            isEndingSeason={endingSeason}
+            onStartNextSeason={address ? handleStartNextSeason : undefined}
+            isStartingNextSeason={startingNextSeason}
+            seasonExpired={seasonExpired}
           />
 
           <DeployPanel
@@ -310,12 +335,12 @@ export default function App() {
       <section className="max-w-7xl mx-auto px-6 pb-6">
         <div className="card space-y-2 text-sm" style={{ color: "var(--text-secondary)" }}>
           <h3 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>📜 How It Works</h3>
-          <p>🐸 <span className="text-pepe font-semibold">PEPE</span> vs <span className="text-shib font-semibold">SHIB</span> 🐕 — pick a side and recruit units for USDC.</p>
-          <p>3 lanes, 3 unit types: ⚔️ &gt; 🔱 &gt; 🐎 &gt; ⚔️ (1.5× RPS bonus).</p>
-          <p>Units march to the enemy bastion 🏰 in 9 minutes (10× speed).</p>
+          <p>🐸 <span className="text-pepe font-semibold">PEPE</span> vs <span className="text-shib font-semibold">SHIB</span> 🦊 — pick a side and recruit units for USDC.</p>
+          <p>3 lanes, 3 unit types: ⚔️ &gt; 🔱 &gt; 🐎 &gt; ⚔️ (1.8× RPS bonus).</p>
+          <p>Units march to the enemy bastion 🏰 in 3 minutes (30× speed).</p>
           <p>💰 70% of recruits → kill pot: win battles — claim the enemy&apos;s USDC.</p>
           <p>🏦 Hold the bastion — farm USDC every minute.</p>
-          <p>🏆 Top 3 players of the winning faction receive a Season NFT at season end (~17h).</p>
+          <p>🏆 Season ends after ~5.6h — hold score winners claim the season treasury.</p>
           <a
             href="#rules"
             className="inline-block mt-2 text-pepe hover:text-pepe/80 font-semibold transition-colors"

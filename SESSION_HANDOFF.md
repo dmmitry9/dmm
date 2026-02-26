@@ -9,7 +9,7 @@
 
 ## 1. Project Overview
 
-**PEPE vs SHIB** — on-chain competitive strategy game on Base L2 (Sepolia testnet). Players choose a faction (PEPE or SHIB), recruit units for USDC, and battle across 3 lanes with a Rock-Paper-Scissors combat system. 70% of recruitment fees go to kill pots, winners take losers' USDC. Seasons last 7 days, top 3 players of winning faction earn Season NFTs.
+**PEPE vs SHIB** — on-chain competitive strategy game on Base L2 (Sepolia testnet). Players choose a faction (PEPE 🐸 or SHIB 🦊), recruit units for USDC, and battle across 3 lanes with a Rock-Paper-Scissors combat system (1.8× advantage). 70% of recruitment fees go to kill pots (proportional — attrition reduces kill pot). Squads auto-arrive at bastion. Seasons last ~5.6h (30× speed), permissionless end/start. Hold score winners claim season treasury.
 
 ### Tech Stack
 - **Smart Contracts:** Solidity 0.8.x, Foundry (forge/cast)
@@ -25,10 +25,10 @@
 
 | Contract | Address |
 |----------|---------|
-| MockUSDC | `0x5735D9c1993154c0B6EAb9dcc3785F89ec43aCFD` |
-| GameEngine (v7) | `0xc2395D23A971986546Ee8e04E97ae8D69Cac4dE5` |
-| Treasury (v6) | `0x95923be820Cc3B7B0d6C353C1308bab28e0a570c` |
-| SeasonNFT | `0xB475A90206e05339535D490D0d723A1f3a212d68` |
+| MockUSDC | `0x69e1eE9F18e1Eb9452fDC461343b85F75bca9c4e` |
+| GameEngine (v8) | `0x3c3c1a83FEC3b6c1fc08632CDa3bBcBD817ed854` |
+| Treasury (v8) | `0x08a0E98795674818afC9e62E7865B067ed10d01F` |
+| SeasonNFT | `0xDD17D19B367996c0E3628f3B819B0235C21DB6AF` |
 
 ### Deployer Account
 - **Address:** `0x777715E32Bad440FfAc2E6ab67dF4F2E817571d2`
@@ -148,8 +148,8 @@ stoic-rosalind/
 ### Key UI Features
 - **GameMap segments:** Min-height 5.5rem, show 5 squad timers, Total line per segment (except bastion), hover tooltip for 20 squads
 - **Squad timers:** Only shown for marching squads where `arrivalTime > now` (no "Ended" display)
-- **Arrive button:** Appears when squads finish marching. `arrive()` auto-triggers battle if both factions present in bastion
-- **Resolve Battle button:** Manual battle trigger when bastion is contested
+- **Auto-arrive:** No manual arrive button. Squads auto-arrive via `_processArrivals()` when any lane interaction occurs (deploy, resolveBattle, refreshHoldScore)
+- **Resolve Battle button:** Manual battle trigger when bastion is contested (also triggers auto-arrive)
 - **Forces counter:** Shows computed effective units from `laneSquads` data (not stale contract `totalUnitsPEPE`/`totalUnitsSHIB`)
 - **RPS icons:** ⚔️ Swordsman > 🔱 Spearman > 🐎 Cavalry
 - **Hash routing:** `#rules` → RulesPage, no router dependency
@@ -162,17 +162,20 @@ stoic-rosalind/
 ### GameEngine.sol
 - **Factions:** PEPE (1) / SHIB (2), locked per season per player
 - **Lanes:** 3 lanes, 7 segments each (0=PEPE base, 3=Bastion, 6=SHIB base)
-- **Units:** Swordsman / Spearman / Cavalry (RPS: 1.5× advantage)
-- **March:** 9 minutes across 3 segments to bastion (10x speed for testing)
-- **Weather:** Changes every 6 hours, +20% to one unit type
+- **Units:** Swordsman / Spearman / Cavalry (RPS: 1.8× advantage)
+- **March:** 3 minutes across 3 segments to bastion (30x speed for testing)
+- **Auto-Arrive:** `_processArrivals(laneId)` called by all lane-interacting functions — no manual arrive needed
+- **Weather:** Changes every 12 minutes (30x speed), +20% to one unit type
 - **Special Events:** Epidemic (2× decay), Harvest (½ decay), Eclipse (no RPS)
 - **Attrition:** ~4%/hour after march duration (0.96^h). Small stacks (1 unit) die in ~5h due to integer truncation
-- **Zombie Cleanup:** `arrive()` checks for 0-effective squads and cleans them. `cleanupMarchingZombies(laneId)` — permissionless batch cleanup for marching zombies
+- **Zombie Cleanup:** `_processArrivals()` checks for 0-effective squads and cleans them. `cleanupMarchingZombies(laneId)` — permissionless batch cleanup for marching zombies
+- **Proportional Kill Pot:** Attrition transfers kill pot proportionally to treasury (based on `originalCount`). Attacker only gets kill pot for units they actually kill.
+- **Season Lifecycle:** `endSeason()` permissionless (after duration), `startNextSeason()` permissionless (after ended), `startSeason()` owner-only for bootstrap
 - **Battle:** Combat power = effective × RPS multiplier × weather bonus
 
 ### Treasury.sol
 - **USDC distribution:** 70% kill pot, 8% season pool, 10% next season, 5% +2 seasons, 2% creators, 5% buyback
-- **Kill pot:** Winner takes 100%, loser gets partial share
+- **Kill pot:** Winner takes remaining proportional kill pot, attrition-reduced portions go to season treasury
 - **Bastion farming:** Hold score = units × minutes → determines season treasury share
 - **Pricing:** $5-$7 USDC per unit, scales with supply imbalance
 
@@ -240,6 +243,13 @@ Most light theme issues are fixed. Some components may still use hardcoded `bg-g
 - ~~Event attrition descriptions~~ → Done
 - ~~Retreat history in battle log~~ → Done
 - ~~Reduced cooldowns (weather 10×, events 5×)~~ → Done
+- ~~Permissionless season lifecycle~~ → Done (v8)
+- ~~Auto-arrive (lazy _processArrivals)~~ → Done (v8)
+- ~~Proportional kill pot~~ → Done (v8)
+- ~~SHIB icon 🐕→🦊~~ → Done (v8)
+- ~~Treasury share in hold score display~~ → Done (v8)
+- ~~Hide faction emoji in non-bastion segments~~ → Done (v8)
+- ~~3× speed-up + RPS 1.8×~~ → Done (v8)
 
 ### Possible Next Steps
 - Player's own squads highlighting / management panel
@@ -257,10 +267,10 @@ Most light theme issues are fixed. Some components may still use hardcoded `bg-g
 Set in `.github/workflows/deploy-frontend.yml`:
 ```
 VITE_WC_PROJECT_ID=demo
-VITE_GAME_ENGINE=0xc2395D23A971986546Ee8e04E97ae8D69Cac4dE5
-VITE_TREASURY=0x95923be820Cc3B7B0d6C353C1308bab28e0a570c
-VITE_SEASON_NFT=0xB475A90206e05339535D490D0d723A1f3a212d68
-VITE_USDC=0x5735D9c1993154c0B6EAb9dcc3785F89ec43aCFD
+VITE_GAME_ENGINE=0x3c3c1a83FEC3b6c1fc08632CDa3bBcBD817ed854
+VITE_TREASURY=0x08a0E98795674818afC9e62E7865B067ed10d01F
+VITE_SEASON_NFT=0xDD17D19B367996c0E3628f3B819B0235C21DB6AF
+VITE_USDC=0x69e1eE9F18e1Eb9452fDC461343b85F75bca9c4e
 ```
 
 ---

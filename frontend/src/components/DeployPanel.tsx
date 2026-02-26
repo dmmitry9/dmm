@@ -127,7 +127,7 @@ export default function DeployPanel({
               disabled:opacity-30`}
             style={activeFaction !== FACTION.SHIB ? { backgroundColor: "var(--btn-inactive-bg)", color: "var(--btn-inactive-text)" } : undefined}
           >
-            🐕 SHIB
+            🦊 SHIB
           </button>
         </div>
         {playerFaction > 0 && (

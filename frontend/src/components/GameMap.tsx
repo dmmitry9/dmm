@@ -14,8 +14,6 @@ interface GameMapProps {
   address?: string;
   onResolveBattle?: (laneId: number) => void;
   resolvingLane?: number | null;
-  onArriveSquad?: (squadId: number) => void;
-  arrivingSquadId?: number | null;
   onRetreatSquad?: (squadId: number) => void;
   retreatingSquadId?: number | null;
 }
@@ -32,7 +30,7 @@ function factionTotals(squads: SegmentSquad[], faction: number) {
   return { total, byType };
 }
 
-function TotalLine({ squads }: { squads: SegmentSquad[] }) {
+function TotalLine({ squads, isBastion = true }: { squads: SegmentSquad[]; isBastion?: boolean }) {
   const pepe = factionTotals(squads, FACTION.PEPE);
   const shib = factionTotals(squads, FACTION.SHIB);
 
@@ -40,7 +38,7 @@ function TotalLine({ squads }: { squads: SegmentSquad[] }) {
     <div className="flex flex-col items-center gap-px border-b pb-0.5 mb-0.5 w-full px-0.5" style={{ borderColor: "var(--game-border)" }}>
       {pepe.total > 0 && (
         <span className="text-[8px] text-pepe font-bold leading-tight">
-          🐸{pepe.total}
+          {isBastion && "🐸"}{pepe.total}
           {pepe.byType.map((c, i) =>
             c > 0 ? <span key={i} style={{ color: "var(--text-secondary)" }}> {c}{UNIT_EMOJI[UNIT_TYPES[i]]}</span> : null
           )}
@@ -48,7 +46,7 @@ function TotalLine({ squads }: { squads: SegmentSquad[] }) {
       )}
       {shib.total > 0 && (
         <span className="text-[8px] text-shib font-bold leading-tight">
-          🐕{shib.total}
+          {isBastion && "🦊"}{shib.total}
           {shib.byType.map((c, i) =>
             c > 0 ? <span key={i} style={{ color: "var(--text-secondary)" }}> {c}{UNIT_EMOJI[UNIT_TYPES[i]]}</span> : null
           )}
@@ -58,14 +56,14 @@ function TotalLine({ squads }: { squads: SegmentSquad[] }) {
   );
 }
 
-function SquadLine({ s }: { s: SegmentSquad }) {
-  const factionEmoji = s.faction === FACTION.PEPE ? "🐸" : "🐕";
+function SquadLine({ s, isBastion = true }: { s: SegmentSquad; isBastion?: boolean }) {
+  const factionEmoji = s.faction === FACTION.PEPE ? "🐸" : "🦊";
   const colorClass = s.faction === FACTION.PEPE ? "text-pepe" : "text-shib";
   const now = Math.floor(Date.now() / 1000);
   const showTimer = s.isMarching && s.arrivalTime > now;
   return (
     <span className={`text-[9px] ${colorClass} font-bold leading-tight`}>
-      {factionEmoji}{s.effectiveUnits}{UNIT_EMOJI[s.unitType] || ""}
+      {isBastion && factionEmoji}{s.effectiveUnits}{UNIT_EMOJI[s.unitType] || ""}
       {showTimer && (
         <span className="ml-0.5" style={{ color: "var(--accent-yellow)" }}>⏳{formatTimeRemaining(s.arrivalTime)}</span>
       )}
@@ -73,7 +71,7 @@ function SquadLine({ s }: { s: SegmentSquad }) {
   );
 }
 
-function SquadBadge({ squads }: { squads: SegmentSquad[] }) {
+function SquadBadge({ squads, isBastion = true }: { squads: SegmentSquad[]; isBastion?: boolean }) {
   if (squads.length === 0) return null;
 
   const sorted = [...squads].sort((a, b) => a.arrivalTime - b.arrivalTime);
@@ -81,9 +79,9 @@ function SquadBadge({ squads }: { squads: SegmentSquad[] }) {
 
   return (
     <div className="flex flex-col items-center gap-px w-full">
-      <TotalLine squads={squads} />
+      <TotalLine squads={squads} isBastion={isBastion} />
       {visible.map((s) => (
-        <SquadLine key={s.squadId} s={s} />
+        <SquadLine key={s.squadId} s={s} isBastion={isBastion} />
       ))}
       {squads.length > 5 && (
         <span className="text-[8px]" style={{ color: "var(--text-muted)" }}>+{squads.length - 5} more</span>
@@ -92,15 +90,15 @@ function SquadBadge({ squads }: { squads: SegmentSquad[] }) {
   );
 }
 
-function SquadTooltip({ squads }: { squads: SegmentSquad[] }) {
+function SquadTooltip({ squads, isBastion = true }: { squads: SegmentSquad[]; isBastion?: boolean }) {
   const sorted = [...squads].sort((a, b) => a.arrivalTime - b.arrivalTime).slice(0, 20);
 
   return (
     <div className="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-1 rounded-lg px-2 py-1.5 shadow-xl min-w-[120px] pointer-events-none" style={{ backgroundColor: "var(--game-card)", borderColor: "var(--game-border)", border: "1px solid var(--game-border)" }}>
-      <TotalLine squads={squads} />
+      <TotalLine squads={squads} isBastion={isBastion} />
       <div className="flex flex-col items-center gap-px mt-0.5">
         {sorted.map((s) => (
-          <SquadLine key={s.squadId} s={s} />
+          <SquadLine key={s.squadId} s={s} isBastion={isBastion} />
         ))}
         {squads.length > 20 && (
           <span className="text-[8px]" style={{ color: "var(--text-muted)" }}>+{squads.length - 20} more</span>
@@ -147,13 +145,13 @@ function Segment({
       {hasSquads ? (
         <>
           {isBastion ? (
-            <TotalLine squads={squads} />
+            <TotalLine squads={squads} isBastion={true} />
           ) : (
             <>
-              <SquadBadge squads={squads} />
+              <SquadBadge squads={squads} isBastion={false} />
               {squads.length > 5 && (
                 <div className="hidden group-hover:block">
-                  <SquadTooltip squads={squads} />
+                  <SquadTooltip squads={squads} isBastion={false} />
                 </div>
               )}
             </>
@@ -163,7 +161,7 @@ function Segment({
         <>
           {isBastion && <span className="text-lg">🏰</span>}
           {index === 0 && <span className="text-sm">🐸</span>}
-          {index === 6 && <span className="text-sm">🐕</span>}
+          {index === 6 && <span className="text-sm">🦊</span>}
         </>
       )}
     </div>
@@ -196,8 +194,6 @@ function LaneRow({
   address,
   onResolveBattle,
   resolvingLane,
-  onArriveSquad,
-  arrivingSquadId,
   onRetreatSquad,
   retreatingSquadId,
 }: {
@@ -208,8 +204,6 @@ function LaneRow({
   address?: string;
   onResolveBattle?: (laneId: number) => void;
   resolvingLane?: number | null;
-  onArriveSquad?: (squadId: number) => void;
-  arrivingSquadId?: number | null;
   onRetreatSquad?: (squadId: number) => void;
   retreatingSquadId?: number | null;
 }) {
@@ -219,19 +213,12 @@ function LaneRow({
   const contested = hasPepeInBastion && hasShibInBastion;
   const isResolving = resolvingLane === laneId;
 
-  // Find squads ready to arrive: marching, at bastion segment, march time elapsed
-  const now = Math.floor(Date.now() / 1000);
-  const readyToArrive = bastionSquads.filter(
-    (s) => s.isMarching && s.arrivalTime <= now
-  );
-  const isArriving = arrivingSquadId !== null && readyToArrive.some((s) => s.squadId === arrivingSquadId);
-
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs px-1" style={{ color: "var(--text-secondary)" }}>
         <span>Lane {laneId + 1}</span>
         <span>
-          🐸 {Number(pepeScore).toLocaleString()} — {Number(shibScore).toLocaleString()} 🐕
+          🐸 {Number(pepeScore).toLocaleString()} — {Number(shibScore).toLocaleString()} 🦊
         </span>
       </div>
       <div className="grid grid-cols-7 gap-1.5">
@@ -239,18 +226,6 @@ function LaneRow({
           <Segment key={seg} index={seg} squads={segments[seg] || []} />
         ))}
       </div>
-      {readyToArrive.length > 0 && onArriveSquad && (
-        <button
-          onClick={() => onArriveSquad(readyToArrive[0].squadId)}
-          disabled={isArriving}
-          className="w-full py-2 rounded-lg font-bold text-sm text-white transition-all hover:opacity-90 disabled:opacity-50"
-          style={{ background: "linear-gradient(to right, var(--accent-yellow), var(--accent-green))" }}
-        >
-          {isArriving
-            ? "⏳ Arriving..."
-            : `🏰 Arrive — ${readyToArrive.length} squad${readyToArrive.length > 1 ? "s" : ""} ready (Lane ${laneId + 1})`}
-        </button>
-      )}
       {/* Retreat button for player's marching squads (not yet at bastion) */}
       {address && onRetreatSquad && (() => {
         const playerMarchingSquads = segments
@@ -286,7 +261,7 @@ function LaneRow({
   );
 }
 
-export default function GameMap({ lanes, laneSquads, weather, specialEvent, address, onResolveBattle, resolvingLane, onArriveSquad, arrivingSquadId, onRetreatSquad, retreatingSquadId }: GameMapProps) {
+export default function GameMap({ lanes, laneSquads, weather, specialEvent, address, onResolveBattle, resolvingLane, onRetreatSquad, retreatingSquadId }: GameMapProps) {
   return (
     <div className="card space-y-6">
       <div className="flex items-center justify-between">
@@ -296,7 +271,7 @@ export default function GameMap({ lanes, laneSquads, weather, specialEvent, addr
           <span>→ march →</span>
           <span className="text-bastion font-bold">🏰</span>
           <span>← march ←</span>
-          <span className="text-shib font-bold">🐕 SHIB</span>
+          <span className="text-shib font-bold">🦊 SHIB</span>
         </div>
       </div>
 
@@ -310,8 +285,6 @@ export default function GameMap({ lanes, laneSquads, weather, specialEvent, addr
           address={address}
           onResolveBattle={onResolveBattle}
           resolvingLane={resolvingLane}
-          onArriveSquad={onArriveSquad}
-          arrivingSquadId={arrivingSquadId}
           onRetreatSquad={onRetreatSquad}
           retreatingSquadId={retreatingSquadId}
         />

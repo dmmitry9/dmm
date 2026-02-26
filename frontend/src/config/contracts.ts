@@ -9,7 +9,7 @@ export const ADDRESSES = {
   seasonNFT: (import.meta.env.VITE_SEASON_NFT ||
     "0x0000000000000000000000000000000000000000") as Address,
   usdc: (import.meta.env.VITE_USDC ||
-    "0x5735D9c1993154c0B6EAb9dcc3785F89ec43aCFD") as Address, // MockUSDC v7
+    "0x69e1eE9F18e1Eb9452fDC461343b85F75bca9c4e") as Address, // MockUSDC v8
 } as const;
 
 // ── GameEngine ABI (minimal — only functions used by frontend) ──
@@ -157,6 +157,7 @@ export const GAME_ENGINE_ABI = [
       { name: "deployedAt", type: "uint40" },
       { name: "bastionEnteredAt", type: "uint40" },
       { name: "initialCount", type: "uint32" },
+      { name: "originalCount", type: "uint32" },
       { name: "costPaid", type: "uint96" },
       { name: "seasonId", type: "uint32" },
     ],
@@ -189,10 +190,31 @@ export const GAME_ENGINE_ABI = [
     outputs: [],
   },
   {
-    name: "arrive",
+    name: "endSeason",
     type: "function",
     stateMutability: "nonpayable",
-    inputs: [{ name: "squadId", type: "uint256" }],
+    inputs: [],
+    outputs: [],
+  },
+  {
+    name: "startNextSeason",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
+  {
+    name: "SEASON_DURATION",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    name: "refreshHoldScore",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "laneId", type: "uint8" }],
     outputs: [],
   },
   {

@@ -11,7 +11,7 @@ enum SpecialEvent { NONE, EPIDEMIC, HARVEST, ECLIPSE }
 
 /// @dev Packed into 2 storage slots.
 /// Slot 0 (29 bytes): owner(20) + laneId(1) + unitType(1) + faction(1) + active(1) + deployedAt(5)
-/// Slot 1 (25 bytes): bastionEnteredAt(5) + initialCount(4) + costPaid(12) + seasonId(4)
+/// Slot 1 (29 bytes): bastionEnteredAt(5) + initialCount(4) + originalCount(4) + costPaid(12) + seasonId(4)
 struct Squad {
     address  owner;
     uint8    laneId;
@@ -21,6 +21,7 @@ struct Squad {
     uint40   deployedAt;
     uint40   bastionEnteredAt; // 0 = not yet in bastion
     uint32   initialCount;
+    uint32   originalCount;    // set once at deploy, never modified (for proportional kill pot)
     uint96   costPaid;
     uint32   seasonId;
 }

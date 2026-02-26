@@ -75,10 +75,10 @@ contract FuzzAttrition is BaseTest {
 
         // Warp past march + bastion hours
         _warpToMarchComplete(deployTime);
-        engine.arrive(squadId);
+        engine.refreshHoldScore(0);
 
         // Warp additional hours in bastion
-        _warpForward(hoursInBastion * 6 minutes);
+        _warpForward(hoursInBastion * 2 minutes);
 
         uint256 eff = engine.getEffectiveUnits(squadId);
 
@@ -104,8 +104,8 @@ contract FuzzAttrition is BaseTest {
         uint256 squadId = _deploySquad(alice, 0, UnitType.SWORDSMAN, Faction.PEPE, count);
         uint256 deployTime = block.timestamp;
         _warpToMarchComplete(deployTime);
-        engine.arrive(squadId);
-        _warpForward(hoursInBastion * 6 minutes);
+        engine.refreshHoldScore(0);
+        _warpForward(hoursInBastion * 2 minutes);
 
         uint256 eff = engine.getEffectiveUnits(squadId);
         uint256 attritionMult = harness.exposed_getAttrition(hoursInBastion);

@@ -54,8 +54,8 @@ contract FuzzBattle is BaseTest {
         );
 
         // At most one side should have active squads
-        (,,,, bool pepeActive,,,,,) = engine.squads(pepeSquad);
-        (,,,, bool shibActive,,,,,) = engine.squads(shibSquad);
+        (,,,, bool pepeActive,,,,,,) = engine.squads(pepeSquad);
+        (,,,, bool shibActive,,,,,,) = engine.squads(shibSquad);
 
         // Not both can survive (one side must lose)
         assertTrue(!pepeActive || !shibActive, "Both sides still active");
@@ -82,15 +82,14 @@ contract FuzzBattle is BaseTest {
 
         uint256 deployTime = block.timestamp;
         _warpToMarchComplete(deployTime);
-        engine.arrive(pepeSquad); // no battle yet
 
-        // Snapshot AFTER deployment+first arrive, BEFORE battle
+        // Snapshot AFTER deployment, BEFORE battle (arrivals + battle triggered together)
         uint256 pepePotBefore = treasury.killPot(0, 1);
         uint256 shibPotBefore = treasury.killPot(0, 2);
         uint256 totalPotBefore = pepePotBefore + shibPotBefore;
         uint256 treasuryBal = usdc.balanceOf(address(treasury));
 
-        engine.arrive(shibSquad); // triggers battle
+        engine.resolveBattle(0); // triggers _processArrivals → battle
 
         uint256 pepePotAfter = treasury.killPot(0, 1);
         uint256 shibPotAfter = treasury.killPot(0, 2);
@@ -201,16 +200,14 @@ contract FuzzBattle is BaseTest {
         uint256 deployTime = block.timestamp;
         _warpToMarchComplete(deployTime);
 
-        // Arrive lane 0
-        engine.arrive(pepe0);
-        engine.arrive(shib0); // triggers battle
+        // Process arrivals on lane 0 (triggers battle)
+        engine.resolveBattle(0);
 
         // Lane 1 should be unaffected
         assertEq(engine.getBastionSquadCount(1), 0, "Lane 1 affected by lane 0 battle");
 
-        // Arrive lane 1
-        engine.arrive(pepe1);
-        engine.arrive(shib1); // triggers battle
+        // Process arrivals on lane 1 (triggers battle)
+        engine.resolveBattle(1);
 
         // Both lanes had battles, at least 1 survivor each
         assertGe(engine.getBastionSquadCount(0), 1, "Lane 0 no survivors");
