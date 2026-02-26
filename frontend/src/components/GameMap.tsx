@@ -16,6 +16,8 @@ interface GameMapProps {
   resolvingLane?: number | null;
   onRetreatSquad?: (squadId: number) => void;
   retreatingSquadId?: number | null;
+  onRefreshScores?: () => void;
+  isRefreshingScores?: boolean;
 }
 
 const SEGMENT_LABELS = ["P-Base", "P-2", "P-1", "Bastion", "S-1", "S-2", "S-Base"];
@@ -261,7 +263,7 @@ function LaneRow({
   );
 }
 
-export default function GameMap({ lanes, laneSquads, weather, specialEvent, address, onResolveBattle, resolvingLane, onRetreatSquad, retreatingSquadId }: GameMapProps) {
+export default function GameMap({ lanes, laneSquads, weather, specialEvent, address, onResolveBattle, resolvingLane, onRetreatSquad, retreatingSquadId, onRefreshScores, isRefreshingScores }: GameMapProps) {
   return (
     <div className="card space-y-6">
       <div className="flex items-center justify-between">
@@ -272,6 +274,21 @@ export default function GameMap({ lanes, laneSquads, weather, specialEvent, addr
           <span className="text-bastion font-bold">🏰</span>
           <span>← march ←</span>
           <span className="text-shib font-bold">🦊 SHIB</span>
+          {onRefreshScores && (
+            <button
+              onClick={onRefreshScores}
+              disabled={isRefreshingScores}
+              className="ml-1 px-2 py-0.5 rounded text-[10px] font-semibold transition-colors"
+              style={{
+                backgroundColor: isRefreshingScores ? "var(--btn-disabled-bg)" : "var(--accent-blue)",
+                color: isRefreshingScores ? "var(--text-muted)" : "#fff",
+                cursor: isRefreshingScores ? "not-allowed" : "pointer",
+              }}
+              title="Refresh hold scores & clean zombie squads (3 tx)"
+            >
+              {isRefreshingScores ? "⏳ Refreshing..." : "♻️ Refresh Scores"}
+            </button>
+          )}
         </div>
       </div>
 

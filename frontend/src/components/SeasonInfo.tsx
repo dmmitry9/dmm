@@ -164,6 +164,23 @@ export default function SeasonInfo({
         </div>
       </div>
 
+      {/* Per-Lane Hold Scores */}
+      {laneHoldScores && (
+        <div className="p-3 rounded-lg space-y-2" style={{ backgroundColor: "var(--panel-bg)" }}>
+          <span className="text-xs font-bold" style={{ color: "var(--accent-yellow-bold)" }}>🏰 Hold Scores</span>
+          {laneHoldScores.map((lane, i) => (
+            <div key={i} className="flex items-center justify-between text-xs">
+              <span style={{ color: "var(--text-secondary)" }}>Lane {i + 1}</span>
+              <span className="font-mono">
+                <span className="text-pepe">🐸 {lane.pepe.toString()}</span>
+                {" — "}
+                <span className="text-shib">{lane.shib.toString()} 🦊</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Weather + Event */}
       <WeatherEventPanel
         weather={weather}
@@ -201,9 +218,9 @@ export default function SeasonInfo({
               {playerHoldScore !== undefined ? playerHoldScore.toString() : "0"}
             </span>
           </div>
-          {playerLaneScores && playerLaneScores.some(s => s > 0n) && (
+          {playerLaneScores && (
             <div className="space-y-1 pt-1">
-              <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Per-Lane Scores</span>
+              <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Your Per-Lane Scores</span>
               {playerLaneScores.map((score, i) => {
                 const laneTotal = laneHoldScores ? laneHoldScores[i].pepe + laneHoldScores[i].shib : 0n;
                 const pct = laneTotal > 0n ? Number(score * 10000n / laneTotal) / 100 : 0;
