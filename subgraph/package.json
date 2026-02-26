@@ -1,0 +1,17 @@
+{
+  "name": "pepe-vs-shib-subgraph",
+  "version": "0.1.0",
+  "description": "The Graph subgraph for PEPE vs SHIB game — indexes battles, squads, seasons, and player stats",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy:studio": "graph deploy --studio pepe-vs-shib",
+    "deploy:hosted": "graph deploy --node https://api.thegraph.com/deploy/ pepe-vs-shib",
+    "create:local": "graph create --node http://localhost:8020/ pepe-vs-shib",
+    "deploy:local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 pepe-vs-shib"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "^0.71.0",
+    "@graphprotocol/graph-ts": "^0.32.0"
+  }
+}

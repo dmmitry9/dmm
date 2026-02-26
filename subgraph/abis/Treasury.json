@@ -1,0 +1,82 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "name": "seasonId", "type": "uint256" },
+      { "indexed": false, "name": "winnerFaction", "type": "uint8" },
+      { "indexed": false, "name": "treasuryBalance", "type": "uint256" }
+    ],
+    "name": "SeasonFinalized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "name": "seasonId", "type": "uint256" },
+      { "indexed": true, "name": "player", "type": "address" },
+      { "indexed": false, "name": "amount", "type": "uint256" }
+    ],
+    "name": "SeasonClaimed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "name": "player", "type": "address" },
+      { "indexed": false, "name": "amount", "type": "uint256" }
+    ],
+    "name": "Withdrawn",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "name": "seasonId", "type": "uint256" },
+      { "indexed": false, "name": "amount", "type": "uint256" }
+    ],
+    "name": "TreasurySeeded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "name": "seasonId", "type": "uint256" },
+      { "indexed": true, "name": "donor", "type": "address" },
+      { "indexed": false, "name": "amount", "type": "uint256" }
+    ],
+    "name": "TreasuryDonation",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "name": "laneId", "type": "uint8" },
+      { "indexed": false, "name": "loserFaction", "type": "uint8" },
+      { "indexed": false, "name": "totalPot", "type": "uint256" }
+    ],
+    "name": "KillRewardDistributed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "name": "laneId", "type": "uint8" },
+      { "indexed": false, "name": "fromFaction", "type": "uint8" },
+      { "indexed": false, "name": "distributed", "type": "uint256" },
+      { "indexed": false, "name": "remaining", "type": "uint256" }
+    ],
+    "name": "PartialKillRewardDistributed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "name": "player", "type": "address" },
+      { "indexed": false, "name": "refund", "type": "uint256" },
+      { "indexed": false, "name": "laneId", "type": "uint8" },
+      { "indexed": false, "name": "faction", "type": "uint8" }
+    ],
+    "name": "RetreatRefunded",
+    "type": "event"
+  }
+]

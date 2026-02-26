@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Theme variables ── */
+:root {
+  --game-bg: #0f172a;
+  --game-card: #1e293b;
+  --game-border: #334155;
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --overlay-bg: rgba(15, 23, 42, 0.95);
+  --score-bar-bg: #374151;
+  --input-bg: #374151;
+  --btn-inactive-bg: #374151;
+  --btn-inactive-text: #9ca3af;
+  --panel-bg: rgba(55, 65, 81, 0.5);
+  --accent-yellow: #facc15;
+  --accent-yellow-bold: #eab308;
+  --accent-green: #4ade80;
+  --accent-red: #f87171;
+  --accent-purple: #c084fc;
+  --treasury-bg: rgba(120, 53, 15, 0.2);
+  --treasury-border: rgba(146, 64, 14, 0.4);
+  --treasury-divider: rgba(146, 64, 14, 0.3);
+}
+
+[data-theme="light"] {
+  --game-bg: #f0ebe3;
+  --game-card: #e8e2d8;
+  --game-border: #c5bfb3;
+  --text-primary: #1a1a2e;
+  --text-secondary: #3d4a5c;
+  --text-muted: #566377;
+  --overlay-bg: rgba(240, 235, 227, 0.95);
+  --score-bar-bg: #c5bfb3;
+  --input-bg: #ddd8cf;
+  --btn-inactive-bg: #d5cfc4;
+  --btn-inactive-text: #4a5568;
+  --panel-bg: rgba(197, 191, 179, 0.5);
+  --accent-yellow: #b45309;
+  --accent-yellow-bold: #92400e;
+  --accent-green: #15803d;
+  --accent-red: #dc2626;
+  --accent-purple: #7c3aed;
+  --treasury-bg: rgba(180, 83, 9, 0.12);
+  --treasury-border: rgba(180, 83, 9, 0.3);
+  --treasury-divider: rgba(180, 83, 9, 0.25);
+}
+
+@layer base {
+  body {
+    @apply antialiased;
+    font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+    background-color: var(--game-bg);
+    color: var(--text-primary);
+  }
+}
+
+@layer components {
+  .card {
+    background-color: var(--game-card);
+    border: 1px solid var(--game-border);
+    @apply rounded-xl p-4;
+  }
+  .btn {
+    @apply px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-pepe {
+    @apply btn bg-pepe hover:bg-pepe-light text-white;
+  }
+  .btn-shib {
+    @apply btn bg-shib hover:bg-shib-light text-white;
+  }
+  .btn-neutral {
+    @apply btn text-white;
+    background-color: var(--text-muted);
+  }
+  .btn-neutral:hover {
+    opacity: 0.85;
+  }
+}
+
+/* Segment animation */
+@keyframes march {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.marching {
+  animation: march 1.5s ease-in-out infinite;
+}
+
+/* Bastion pulse */
+@keyframes bastion-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(139, 92, 246, 0.4); }
+  50% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.8); }
+}
+.bastion-glow {
+  animation: bastion-pulse 2s ease-in-out infinite;
+}
