@@ -208,8 +208,8 @@ function LaneRow({
   retreatingSquadId?: number | null;
 }) {
   const bastionSquads = segments[BASTION_SEGMENT] || [];
-  const hasPepeInBastion = bastionSquads.some((s) => s.faction === FACTION.PEPE && !s.isMarching);
-  const hasShibInBastion = bastionSquads.some((s) => s.faction === FACTION.SHIB && !s.isMarching);
+  const hasPepeInBastion = bastionSquads.some((s) => s.faction === FACTION.PEPE);
+  const hasShibInBastion = bastionSquads.some((s) => s.faction === FACTION.SHIB);
   const contested = hasPepeInBastion && hasShibInBastion;
   const isResolving = resolvingLane === laneId;
 
