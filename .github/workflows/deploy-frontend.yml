@@ -2,7 +2,7 @@ name: Deploy Frontend to GitHub Pages
 
 on:
   push:
-    branches: [claude/stoic-rosalind, master]
+    branches: [claude/stoic-rosalind, claude/ecstatic-banach, master]
 
 permissions:
   contents: read
