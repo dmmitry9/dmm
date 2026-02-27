@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { ADDRESSES, GAME_ENGINE_ABI, ERC20_ABI } from "../config/contracts";
 import { useUnitPrice, usePlayerFaction } from "../hooks/useGameState";
+import { playDeploy } from "../lib/sounds";
 import {
   FACTION,
   UNIT_TYPE,
@@ -64,6 +65,7 @@ export default function DeployPanel({
   if (isSuccess) {
     onDeployed();
     refetchAllowance();
+    playDeploy();
   }
 
   const handleApprove = () => {
@@ -112,7 +114,7 @@ export default function DeployPanel({
           <button
             onClick={() => setFaction(FACTION.PEPE)}
             disabled={playerFaction > 0 && playerFaction !== FACTION.PEPE}
-            className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all
+            className={`flex-1 py-2.5 sm:py-2 rounded-lg font-bold text-sm transition-all
               ${activeFaction === FACTION.PEPE ? "bg-pepe text-white" : ""}
               disabled:opacity-30`}
             style={activeFaction !== FACTION.PEPE ? { backgroundColor: "var(--btn-inactive-bg)", color: "var(--btn-inactive-text)" } : undefined}
@@ -122,7 +124,7 @@ export default function DeployPanel({
           <button
             onClick={() => setFaction(FACTION.SHIB)}
             disabled={playerFaction > 0 && playerFaction !== FACTION.SHIB}
-            className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all
+            className={`flex-1 py-2.5 sm:py-2 rounded-lg font-bold text-sm transition-all
               ${activeFaction === FACTION.SHIB ? "bg-shib text-white" : ""}
               disabled:opacity-30`}
             style={activeFaction !== FACTION.SHIB ? { backgroundColor: "var(--btn-inactive-bg)", color: "var(--btn-inactive-text)" } : undefined}
@@ -149,8 +151,8 @@ export default function DeployPanel({
                 key={ut}
                 onClick={() => setUnitType(ut)}
                 className={`py-2 rounded-lg text-sm transition-all
-                ${unitType === ut ? "bg-indigo-600 text-white" : ""}`}
-                style={unitType !== ut ? { backgroundColor: "var(--btn-inactive-bg)", color: "var(--btn-inactive-text)" } : undefined}
+                ${unitType === ut ? "text-white" : ""}`}
+                style={unitType === ut ? { backgroundColor: "var(--accent-purple)" } : { backgroundColor: "var(--btn-inactive-bg)", color: "var(--btn-inactive-text)" }}
               >
                 {UNIT_EMOJI[ut]} {UNIT_LABELS[ut]}
               </button>

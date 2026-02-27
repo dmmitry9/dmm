@@ -74,7 +74,7 @@ export function useGameState() {
 
 // ── Hold scores for all 3 lanes ──
 export function useLaneScores() {
-  const { data, isLoading } = useReadContracts({
+  const { data, isLoading, dataUpdatedAt } = useReadContracts({
     contracts: [0, 1, 2].map((laneId) => ({
       address: ADDRESSES.gameEngine,
       abi: GAME_ENGINE_ABI,
@@ -92,7 +92,7 @@ export function useLaneScores() {
     };
   });
 
-  return { lanes, isLoading };
+  return { lanes, isLoading, dataUpdatedAt };
 }
 
 // ── Player hold score for current season ──

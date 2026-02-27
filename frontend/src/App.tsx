@@ -9,6 +9,7 @@ import RewardsPanel from "./components/RewardsPanel";
 import RulesPage from "./components/RulesPage";
 import BattleLog from "./components/BattleLog";
 import { FACTION, WEATHER_INTERVAL } from "./lib/constants";
+import { isMuted, toggleMute, playBattle, playWeatherChange, playSeasonEvent } from "./lib/sounds";
 import {
   useGameState,
   useLaneScores,
@@ -35,6 +36,7 @@ function useTheme() {
 
 export default function App() {
   const { theme, toggle: toggleTheme } = useTheme();
+  const [soundMuted, setSoundMuted] = useState(isMuted());
   const [showRules, setShowRules] = useState(window.location.hash === "#rules");
 
   useEffect(() => {
@@ -85,6 +87,7 @@ export default function App() {
   if (resolveSuccess && resolvingLane !== null) {
     setResolvingLane(null);
     gameState.refetch();
+    playBattle();
   }
 
   const handleResolveBattle = (laneId: number) => {
@@ -162,6 +165,7 @@ export default function App() {
   if (weatherSuccess && rollingWeather) {
     setRollingWeather(false);
     gameState.refetch();
+    playWeatherChange();
   }
 
   const handleRollWeather = () => {
@@ -181,6 +185,7 @@ export default function App() {
   if (eventSuccess && rollingEvent) {
     setRollingEvent(false);
     gameState.refetch();
+    playSeasonEvent();
   }
 
   const handleRollEvent = () => {
@@ -205,7 +210,7 @@ export default function App() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--game-bg)", color: "var(--text-primary)" }}>
       {/* Header */}
-      <header className="border-b border-game-border px-6 py-4">
+      <header className="border-b border-game-border px-3 sm:px-6 py-3 sm:py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">⚔️</span>
@@ -220,7 +225,14 @@ export default function App() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => setSoundMuted(toggleMute())}
+              className="text-xl hover:opacity-70 transition-opacity"
+              title={soundMuted ? "Unmute sounds" : "Mute sounds"}
+            >
+              {soundMuted ? "🔇" : "🔊"}
+            </button>
             <button
               onClick={toggleTheme}
               className="text-xl hover:opacity-70 transition-opacity"
@@ -234,7 +246,7 @@ export default function App() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Left column: Map (2/3 width) */}
         <div className="lg:col-span-2 space-y-6">
           <GameMap
@@ -259,7 +271,7 @@ export default function App() {
           />
 
           {/* Game Info Bar */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
             <ForcesCard
               label="PEPE Forces"
               count={effectivePEPE}
@@ -295,7 +307,7 @@ export default function App() {
         </div>
 
         {/* Right column: Controls (1/3 width) */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <SeasonInfo
             seasonId={gameState.seasonId}
             seasonActive={gameState.seasonActive}
@@ -311,24 +323,36 @@ export default function App() {
             onStartNextSeason={address ? handleStartNextSeason : undefined}
             isStartingNextSeason={startingNextSeason}
             seasonExpired={seasonExpired}
+            onDonated={() => gameState.refetch()}
           />
 
-          <DeployPanel
-            seasonActive={gameState.seasonActive}
-            totalPEPE={gameState.totalPEPE ?? 0n}
-            totalSHIB={gameState.totalSHIB ?? 0n}
-            onDeployed={() => gameState.refetch()}
-          />
+          {/* Collapsible on mobile */}
+          <details className="lg:open" open>
+            <summary className="lg:hidden cursor-pointer font-bold text-sm py-2 list-none flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
+              🚀 Deploy Units <span className="text-xs" style={{ color: "var(--text-muted)" }}>▼</span>
+            </summary>
+            <DeployPanel
+              seasonActive={gameState.seasonActive}
+              totalPEPE={gameState.totalPEPE ?? 0n}
+              totalSHIB={gameState.totalSHIB ?? 0n}
+              onDeployed={() => gameState.refetch()}
+            />
+          </details>
 
-          <RewardsPanel
-            pendingRewards={pendingRewards}
-            seasonId={gameState.seasonId}
-          />
+          <details className="lg:open" open>
+            <summary className="lg:hidden cursor-pointer font-bold text-sm py-2 list-none flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
+              💎 Rewards <span className="text-xs" style={{ color: "var(--text-muted)" }}>▼</span>
+            </summary>
+            <RewardsPanel
+              pendingRewards={pendingRewards}
+              seasonId={gameState.seasonId}
+            />
+          </details>
         </div>
       </main>
 
       {/* Rules */}
-      <section className="max-w-7xl mx-auto px-6 pb-6">
+      <section className="max-w-7xl mx-auto px-3 sm:px-6 pb-4 sm:pb-6">
         <div className="card space-y-2 text-sm" style={{ color: "var(--text-secondary)" }}>
           <h3 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>📜 How It Works</h3>
           <p>🐸 <span className="text-pepe font-semibold">PEPE</span> vs <span className="text-shib font-semibold">SHIB</span> 🦊 — pick a side and recruit units for USDC.</p>

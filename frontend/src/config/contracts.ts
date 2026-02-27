@@ -387,4 +387,14 @@ export const TREASURY_ABI = [
     inputs: [],
     outputs: [{ type: "uint256" }],
   },
+  {
+    name: "donate",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "seasonId", type: "uint256" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
+  },
 ] as const;

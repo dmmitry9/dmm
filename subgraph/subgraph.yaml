@@ -5,11 +5,11 @@ dataSources:
   # ── GameEngine ──────────────────────────
   - kind: ethereum
     name: GameEngine
-    network: base
+    network: base-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000"  # Replace after deployment
+      address: "0xe8A5fAd5F2D12797Ae8Ac180BB6C077e0a6aD5C0"
       abi: GameEngine
-      startBlock: 0  # Replace with deployment block
+      startBlock: 0
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -53,11 +53,11 @@ dataSources:
   # ── Treasury ────────────────────────────
   - kind: ethereum
     name: Treasury
-    network: base
+    network: base-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000"  # Replace after deployment
+      address: "0x11e49674CE039A9fb15210e5258e0F062eF029E2"
       abi: Treasury
-      startBlock: 0  # Replace with deployment block
+      startBlock: 0
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -93,11 +93,11 @@ dataSources:
   # ── SeasonNFT ───────────────────────────
   - kind: ethereum
     name: SeasonNFT
-    network: base
+    network: base-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000"  # Replace after deployment
+      address: "0x9b6Fcf35e4728D78107F9D9295d40629CE3c9Ce4"
       abi: SeasonNFT
-      startBlock: 0  # Replace with deployment block
+      startBlock: 0
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7

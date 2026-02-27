@@ -1,3 +1,7 @@
+import { useState } from "react";
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { ADDRESSES, ERC20_ABI, TREASURY_ABI } from "../config/contracts";
+import { playConfirm } from "../lib/sounds";
 import type { TreasuryBreakdown } from "../hooks/useGameState";
 import {
   SEASON_DURATION,
@@ -20,6 +24,7 @@ interface SeasonInfoProps {
   onStartNextSeason?: () => void;
   isStartingNextSeason?: boolean;
   seasonExpired?: boolean;
+  onDonated?: () => void;
 }
 
 export default function SeasonInfo({
@@ -37,10 +42,64 @@ export default function SeasonInfo({
   onStartNextSeason,
   isStartingNextSeason,
   seasonExpired,
+  onDonated,
 }: SeasonInfoProps) {
+  const { address } = useAccount();
   const seasonEnd = seasonStartTime
     ? Number(seasonStartTime) + SEASON_DURATION
     : 0;
+
+  // Donate to season pool
+  const [showDonate, setShowDonate] = useState(false);
+  const [donateAmount, setDonateAmount] = useState("");
+  const donateAmountRaw = BigInt(Math.floor(Number(donateAmount || "0") * 1_000_000));
+
+  const { data: treasuryAllowance, refetch: refetchAllowance } = useReadContract({
+    address: ADDRESSES.usdc,
+    abi: ERC20_ABI,
+    functionName: "allowance",
+    args: address ? [address, ADDRESSES.treasury] : undefined,
+    query: { enabled: !!address },
+  });
+  const currentTreasuryAllowance = (treasuryAllowance as bigint | undefined) ?? 0n;
+  const hasDonateAllowance = donateAmountRaw > 0n && currentTreasuryAllowance >= donateAmountRaw;
+
+  const { writeContract: approveTreasury, data: approveDonateTx } = useWriteContract();
+  const { writeContract: donateTx, data: donateHash } = useWriteContract();
+
+  const { isLoading: isApprovingDonate, isSuccess: approveDonateSuccess } = useWaitForTransactionReceipt({ hash: approveDonateTx });
+  const { isLoading: isDonating, isSuccess: donateSuccess } = useWaitForTransactionReceipt({ hash: donateHash });
+
+  if (approveDonateSuccess) {
+    refetchAllowance();
+  }
+
+  if (donateSuccess) {
+    setDonateAmount("");
+    setShowDonate(false);
+    onDonated?.();
+    playConfirm();
+  }
+
+  const handleApproveDonate = () => {
+    if (donateAmountRaw <= 0n) return;
+    approveTreasury({
+      address: ADDRESSES.usdc,
+      abi: ERC20_ABI,
+      functionName: "approve",
+      args: [ADDRESSES.treasury, donateAmountRaw],
+    });
+  };
+
+  const handleDonate = () => {
+    if (!seasonId || donateAmountRaw <= 0n) return;
+    donateTx({
+      address: ADDRESSES.treasury,
+      abi: TREASURY_ABI,
+      functionName: "donate",
+      args: [seasonId, donateAmountRaw],
+    });
+  };
 
   return (
     <div className="card space-y-4">
@@ -83,14 +142,77 @@ export default function SeasonInfo({
         </button>
       )}
 
-      {/* Treasury — Season Pool only */}
-      <div className="p-3 rounded-lg" style={{ backgroundColor: "var(--treasury-bg)", border: "1px solid var(--treasury-border)" }}>
+      {/* Treasury — Season Pool + Donate */}
+      <div className="p-3 rounded-lg space-y-2" style={{ backgroundColor: "var(--treasury-bg)", border: "1px solid var(--treasury-border)" }}>
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold" style={{ color: "var(--accent-yellow-bold)" }}>💰 Season Pool</span>
           <span className="font-mono text-sm font-bold" style={{ color: "var(--accent-yellow)" }}>
             {formatUSDC(treasuryBreakdown.seasonTreasury)}
           </span>
         </div>
+
+        {address && seasonActive && (
+          <>
+            {!showDonate ? (
+              <button
+                onClick={() => setShowDonate(true)}
+                className="w-full text-xs py-1 rounded transition-all hover:opacity-80"
+                style={{ color: "var(--accent-yellow)", backgroundColor: "var(--accent-yellow-bold)", opacity: 0.7 }}
+              >
+                + Donate to Pool
+              </button>
+            ) : (
+              <div className="space-y-2 pt-1 border-t" style={{ borderColor: "var(--treasury-border)" }}>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={donateAmount}
+                    onChange={(e) => setDonateAmount(e.target.value)}
+                    placeholder="USDC amount"
+                    min={0}
+                    step="0.01"
+                    className="flex-1 border border-game-border rounded px-2 py-1 text-xs font-mono"
+                    style={{ backgroundColor: "var(--input-bg)", color: "var(--text-primary)" }}
+                  />
+                  <button
+                    onClick={() => { setShowDonate(false); setDonateAmount(""); }}
+                    className="text-xs px-2 py-1 rounded transition-all hover:opacity-80"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                {hasDonateAllowance ? (
+                  <button
+                    onClick={handleDonate}
+                    disabled={donateAmountRaw <= 0n || isDonating}
+                    className="w-full py-1.5 rounded text-xs font-bold text-white transition-all disabled:opacity-50"
+                    style={{ backgroundColor: "var(--accent-green)" }}
+                  >
+                    {isDonating ? "Donating..." : `Donate ${donateAmount ? "$" + donateAmount : ""}`}
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleApproveDonate}
+                      disabled={donateAmountRaw <= 0n || isApprovingDonate}
+                      className="flex-1 py-1.5 rounded text-xs font-bold btn-neutral disabled:opacity-50"
+                    >
+                      {isApprovingDonate ? "Approving..." : "1. Approve"}
+                    </button>
+                    <button
+                      disabled
+                      className="flex-1 py-1.5 rounded text-xs font-bold opacity-50 text-white"
+                      style={{ backgroundColor: "var(--accent-green)" }}
+                    >
+                      2. Donate
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Player Stats */}

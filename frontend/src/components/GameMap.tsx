@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { BASTION_SEGMENT, FACTION, UNIT_EMOJI, UNIT_TYPE, formatTimeRemaining, formatUSDC, WEATHER_LABELS, WEATHER_EMOJI, WEATHER_BONUS_UNIT, EVENT_LABELS, EVENT_EMOJI, WEATHER_INTERVAL, formatTime } from "../lib/constants";
 import type { SegmentSquad } from "../hooks/useGameState";
 
@@ -46,7 +46,7 @@ function TotalLine({ squads, isBastion = true }: { squads: SegmentSquad[]; isBas
   return (
     <div className="flex flex-col items-center gap-px border-b pb-0.5 mb-0.5 w-full px-0.5" style={{ borderColor: "var(--game-border)" }}>
       {pepe.total > 0 && (
-        <span className="text-[8px] text-pepe font-bold leading-tight">
+        <span className="text-[7px] sm:text-[8px] text-pepe font-bold leading-tight">
           {isBastion && "🐸"}{pepe.total}
           {pepe.byType.map((c, i) =>
             c > 0 ? <span key={i} style={{ color: "var(--text-secondary)" }}> {c}{UNIT_EMOJI[UNIT_TYPES[i]]}</span> : null
@@ -54,7 +54,7 @@ function TotalLine({ squads, isBastion = true }: { squads: SegmentSquad[]; isBas
         </span>
       )}
       {shib.total > 0 && (
-        <span className="text-[8px] text-shib font-bold leading-tight">
+        <span className="text-[7px] sm:text-[8px] text-shib font-bold leading-tight">
           {isBastion && "🦊"}{shib.total}
           {shib.byType.map((c, i) =>
             c > 0 ? <span key={i} style={{ color: "var(--text-secondary)" }}> {c}{UNIT_EMOJI[UNIT_TYPES[i]]}</span> : null
@@ -65,14 +65,15 @@ function TotalLine({ squads, isBastion = true }: { squads: SegmentSquad[]; isBas
   );
 }
 
-function SquadLine({ s, isBastion = true }: { s: SegmentSquad; isBastion?: boolean }) {
+function SquadLine({ s, isBastion = true, address }: { s: SegmentSquad; isBastion?: boolean; address?: string }) {
   const factionEmoji = s.faction === FACTION.PEPE ? "🐸" : "🦊";
   const colorClass = s.faction === FACTION.PEPE ? "text-pepe" : "text-shib";
   const now = Math.floor(Date.now() / 1000);
   const showTimer = s.isMarching && s.arrivalTime > now;
+  const isOwn = address && s.owner.toLowerCase() === address.toLowerCase();
   return (
-    <span className={`text-[9px] ${colorClass} font-bold leading-tight`}>
-      {isBastion && factionEmoji}{s.effectiveUnits}{UNIT_EMOJI[s.unitType] || ""}
+    <span className={`text-[9px] ${colorClass} font-bold leading-tight ${isOwn ? "ring-1 ring-yellow-400 rounded px-0.5" : ""}`}>
+      {isOwn && "★"}{isBastion && factionEmoji}{s.effectiveUnits}{UNIT_EMOJI[s.unitType] || ""}
       {showTimer && (
         <span className="ml-0.5" style={{ color: "var(--accent-yellow)" }}>⏳{formatTimeRemaining(s.arrivalTime)}</span>
       )}
@@ -80,7 +81,7 @@ function SquadLine({ s, isBastion = true }: { s: SegmentSquad; isBastion?: boole
   );
 }
 
-function SquadBadge({ squads, isBastion = true }: { squads: SegmentSquad[]; isBastion?: boolean }) {
+function SquadBadge({ squads, isBastion = true, address }: { squads: SegmentSquad[]; isBastion?: boolean; address?: string }) {
   if (squads.length === 0) return null;
 
   const sorted = [...squads].sort((a, b) => a.arrivalTime - b.arrivalTime);
@@ -90,7 +91,7 @@ function SquadBadge({ squads, isBastion = true }: { squads: SegmentSquad[]; isBa
     <div className="flex flex-col items-center gap-px w-full">
       <TotalLine squads={squads} isBastion={isBastion} />
       {visible.map((s) => (
-        <SquadLine key={s.squadId} s={s} isBastion={isBastion} />
+        <SquadLine key={s.squadId} s={s} isBastion={isBastion} address={address} />
       ))}
       {squads.length > 5 && (
         <span className="text-[8px]" style={{ color: "var(--text-muted)" }}>+{squads.length - 5} more</span>
@@ -99,7 +100,7 @@ function SquadBadge({ squads, isBastion = true }: { squads: SegmentSquad[]; isBa
   );
 }
 
-function SquadTooltip({ squads, isBastion = true }: { squads: SegmentSquad[]; isBastion?: boolean }) {
+function SquadTooltip({ squads, isBastion = true, address }: { squads: SegmentSquad[]; isBastion?: boolean; address?: string }) {
   const sorted = [...squads].sort((a, b) => a.arrivalTime - b.arrivalTime).slice(0, 20);
 
   return (
@@ -107,7 +108,7 @@ function SquadTooltip({ squads, isBastion = true }: { squads: SegmentSquad[]; is
       <TotalLine squads={squads} isBastion={isBastion} />
       <div className="flex flex-col items-center gap-px mt-0.5">
         {sorted.map((s) => (
-          <SquadLine key={s.squadId} s={s} isBastion={isBastion} />
+          <SquadLine key={s.squadId} s={s} isBastion={isBastion} address={address} />
         ))}
         {squads.length > 20 && (
           <span className="text-[8px]" style={{ color: "var(--text-muted)" }}>+{squads.length - 20} more</span>
@@ -120,14 +121,17 @@ function SquadTooltip({ squads, isBastion = true }: { squads: SegmentSquad[]; is
 function Segment({
   index,
   squads,
+  address,
 }: {
   index: number;
   squads: SegmentSquad[];
+  address?: string;
 }) {
   const isBastion = index === BASTION_SEGMENT;
   const isPepeSide = index < BASTION_SEGMENT;
   const isShibSide = index > BASTION_SEGMENT;
   const hasSquads = squads.length > 0;
+  const hasOwnSquad = address && squads.some((s) => s.owner.toLowerCase() === address.toLowerCase());
 
   let bgClass = "bg-game-card";
   if (isBastion) bgClass = "bg-bastion/30 bastion-glow";
@@ -146,9 +150,10 @@ function Segment({
     <div
       className={`
         group relative flex items-center justify-center
-        min-h-[5.5rem] rounded-lg border transition-all py-1
+        min-h-[3.5rem] sm:min-h-[5.5rem] rounded-lg border transition-all py-1
         ${isBastion ? "border-bastion" : hasSquads ? "border-game-border" : "border-game-border"}
         ${bgClass}
+        ${hasOwnSquad ? "own-squad-glow border-yellow-400/50" : ""}
       `}
     >
       {hasSquads ? (
@@ -157,10 +162,10 @@ function Segment({
             <TotalLine squads={squads} isBastion={true} />
           ) : (
             <>
-              <SquadBadge squads={squads} isBastion={false} />
+              <SquadBadge squads={squads} isBastion={false} address={address} />
               {squads.length > 5 && (
                 <div className="hidden group-hover:block">
-                  <SquadTooltip squads={squads} isBastion={false} />
+                  <SquadTooltip squads={squads} isBastion={false} address={address} />
                 </div>
               )}
             </>
@@ -180,9 +185,26 @@ function Segment({
 function ScoreBar({ pepe, shib }: { pepe: bigint; shib: bigint }) {
   const total = Number(pepe + shib);
   const pepePct = total > 0 ? (Number(pepe) / total) * 100 : 50;
+  const prevPepe = useRef(pepe);
+  const prevShib = useRef(shib);
+  const [flash, setFlash] = useState(false);
+
+  useEffect(() => {
+    if (prevPepe.current !== pepe || prevShib.current !== shib) {
+      if (prevPepe.current !== undefined) {
+        setFlash(true);
+        const t = setTimeout(() => setFlash(false), 1000);
+        prevPepe.current = pepe;
+        prevShib.current = shib;
+        return () => clearTimeout(t);
+      }
+      prevPepe.current = pepe;
+      prevShib.current = shib;
+    }
+  }, [pepe, shib]);
 
   return (
-    <div className="flex h-2 rounded-full overflow-hidden" style={{ backgroundColor: "var(--score-bar-bg)" }}>
+    <div className={`flex h-2 rounded-full overflow-hidden ${flash ? "score-updated" : ""}`} style={{ backgroundColor: "var(--score-bar-bg)" }}>
       <div
         className="bg-pepe transition-all duration-1000"
         style={{ width: `${pepePct}%` }}
@@ -203,6 +225,7 @@ function LaneRow({
   onResolveBattle,
   resolvingLane,
   killPot,
+  address,
 }: {
   laneId: number;
   pepeScore: bigint;
@@ -211,6 +234,7 @@ function LaneRow({
   onResolveBattle?: (laneId: number) => void;
   resolvingLane?: number | null;
   killPot?: { pepe: bigint; shib: bigint };
+  address?: string;
 }) {
   const bastionSquads = segments[BASTION_SEGMENT] || [];
   const hasPepeInBastion = bastionSquads.some((s) => s.faction === FACTION.PEPE);
@@ -237,7 +261,7 @@ function LaneRow({
       </div>
       <div className="grid grid-cols-7 gap-1.5">
         {[0, 1, 2, 3, 4, 5, 6].map((seg) => (
-          <Segment key={seg} index={seg} squads={segments[seg] || []} />
+          <Segment key={seg} index={seg} squads={segments[seg] || []} address={address} />
         ))}
       </div>
       {contested && onResolveBattle && (
@@ -272,6 +296,7 @@ export default function GameMap({
   onRollSpecialEvent,
   isRollingWeather,
   isRollingEvent,
+  address,
 }: GameMapProps) {
   const [now, setNow] = useState(Math.floor(Date.now() / 1000));
   useEffect(() => {
@@ -374,6 +399,7 @@ export default function GameMap({
           onResolveBattle={onResolveBattle}
           resolvingLane={resolvingLane}
           killPot={killPots?.[i]}
+          address={address}
         />
       ))}
     </div>
