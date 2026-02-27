@@ -3,7 +3,7 @@ import { type Address } from "viem";
 // ── Contract addresses (Base Sepolia — update after deployment) ──
 export const ADDRESSES = {
   gameEngine: (import.meta.env.VITE_GAME_ENGINE ||
-    "0xe8A5fAd5F2D12797Ae8Ac180BB6C077e0a6aD5C0") as Address,
+    "0x6d7A83CDE0d1b0D81Bf41E704BD42aa5b49059D9") as Address,
   treasury: (import.meta.env.VITE_TREASURY ||
     "0x11e49674CE039A9fb15210e5258e0F062eF029E2") as Address,
   seasonNFT: (import.meta.env.VITE_SEASON_NFT ||

@@ -373,15 +373,15 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     /// @param laneId Lane to refresh (0–2).
     function refreshHoldScore(uint8 laneId) external {
         require(laneId < NUM_LANES, "Invalid lane");
-        _processArrivals(laneId);
         _updateHoldScore(laneId);
+        _processArrivals(laneId);
     }
 
     /// @notice Permissionless: refresh all lanes in one transaction.
     function refreshAllLanes() external {
         for (uint8 i = 0; i < NUM_LANES; i++) {
-            _processArrivals(i);
             _updateHoldScore(i);
+            _processArrivals(i);
         }
     }
 
@@ -441,8 +441,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     function setSpecialEvent(SpecialEvent evt) external override onlyTreasury {
         // Snapshot all bastions before event change to lock in attrition
         for (uint8 i = 0; i < NUM_LANES; i++) {
-            _processArrivals(i);
             _updateHoldScore(i);
+            _processArrivals(i);
         }
         currentSpecialEvent = evt;
         specialEventEndsAt = block.timestamp + SPECIAL_EVENT_DURATION;
@@ -468,8 +468,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         require(block.timestamp >= specialEventEndsAt, "Event still active");
         // Snapshot all bastions before event change to lock in attrition
         for (uint8 i = 0; i < NUM_LANES; i++) {
-            _processArrivals(i);
             _updateHoldScore(i);
+            _processArrivals(i);
         }
         uint256 rand = uint256(keccak256(abi.encodePacked(blockhash(block.number - 1), block.timestamp, msg.sender)));
         uint256 eventIndex = rand % 4; // 25% each: NONE, EPIDEMIC, HARVEST, ECLIPSE
@@ -498,8 +498,8 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         uint256 shibTotal;
         uint256[3] memory laneHoldScores;
         for (uint8 i = 0; i < NUM_LANES; i++) {
-            _processArrivals(i);
             _updateHoldScore(i);
+            _processArrivals(i);
             laneHoldScores[i] = uint256(bastions[i].holdScorePEPE) + uint256(bastions[i].holdScoreSHIB);
             pepeTotal += bastions[i].holdScorePEPE;
             shibTotal += bastions[i].holdScoreSHIB;
