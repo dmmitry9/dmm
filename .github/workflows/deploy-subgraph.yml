@@ -1,0 +1,36 @@
+name: Deploy Subgraph to The Graph Studio
+
+on:
+  push:
+    branches: [claude/ecstatic-banach, master]
+    paths:
+      - "subgraph/**"
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: subgraph
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install
+
+      - name: Generate types
+        run: npx graph codegen
+
+      - name: Build
+        run: npx graph build
+
+      - name: Authenticate
+        run: npx graph auth --studio ${{ secrets.GRAPH_DEPLOY_KEY }}
+
+      - name: Deploy
+        run: npx graph deploy --studio pepe-vs-shib --version-label v0.1.0

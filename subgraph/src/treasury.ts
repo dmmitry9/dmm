@@ -7,7 +7,6 @@ import {
   TreasuryDonation,
   KillRewardDistributed,
   PartialKillRewardDistributed,
-  RetreatRefunded,
 } from "../generated/Treasury/Treasury";
 import {
   Season,
@@ -154,8 +153,3 @@ export function handlePartialKillRewardDistributed(
   // Aggregate tracking — individual rewards tracked via pendingRewards
 }
 
-export function handleRetreatRefunded(event: RetreatRefunded): void {
-  let player = getOrCreatePlayer(event.params.player);
-  player.pendingRewards = player.pendingRewards.plus(event.params.refund);
-  player.save();
-}

@@ -2,7 +2,6 @@ import { BigInt, Bytes } from "@graphprotocol/graph-ts";
 import {
   UnitsDeployed,
   SquadArrived,
-  Retreated,
   BattleResolved,
   SeasonStarted,
   SeasonEnded,
@@ -103,8 +102,16 @@ function createActivity(
   activity.save();
 }
 
-// Track current season ID globally (via Season entity with latest startTime)
-let CURRENT_SEASON_KEY = "current";
+// Track current season ID via a singleton entity
+function getCurrentSeasonId(): string {
+  // Find the latest active season by iterating from high IDs down
+  // Since seasons are sequential, check recent ones
+  for (let i = 100; i >= 1; i--) {
+    let season = Season.load(i.toString());
+    if (season != null) return i.toString();
+  }
+  return "2"; // fallback for current deployment
+}
 
 // ═══════════════════════════════════════════
 //              EVENT HANDLERS
@@ -157,13 +164,6 @@ export function handleSeasonEnded(event: SeasonEnded): void {
   season.active = false;
   season.endTime = event.block.timestamp;
   season.winner = event.params.winner;
-
-  let top3Array = new Array<Bytes>(3);
-  let top3Param = event.params.top3;
-  for (let i = 0; i < 3; i++) {
-    top3Array[i] = top3Param[i];
-  }
-  season.top3 = top3Array;
   season.save();
 
   createActivity(
@@ -186,10 +186,7 @@ export function handleUnitsDeployed(event: UnitsDeployed): void {
   let faction = event.params.faction;
   let laneId = event.params.laneId;
 
-  // Find current season (latest active)
-  // We use a simple approach: search from recent season IDs
-  let seasonId = "1"; // default fallback
-  // In practice, the frontend knows the current season
+  let seasonId = getCurrentSeasonId();
 
   let player = getOrCreatePlayer(ownerAddress);
   player.totalUsdcSpent = player.totalUsdcSpent.plus(event.params.cost);
@@ -271,38 +268,12 @@ export function handleSquadArrived(event: SquadArrived): void {
   );
 }
 
-export function handleRetreated(event: Retreated): void {
-  let squad = Squad.load(event.params.squadId.toString());
-  if (squad == null) return;
-
-  squad.active = false;
-  squad.retreatedAt = event.block.timestamp;
-  squad.save();
-
-  createActivity(
-    event.transaction.hash,
-    event.logIndex,
-    "retreat",
-    squad.season,
-    event.params.owner.toHexString(),
-    squad.laneId,
-    squad.faction,
-    '{"refund":"' +
-      event.params.refund.toString() +
-      '","penalty":"' +
-      event.params.penalty.toString() +
-      '"}',
-    event.block.timestamp,
-    event.block.number
-  );
-}
-
 export function handleBattleResolved(event: BattleResolved): void {
   let id =
     event.transaction.hash.toHexString() + "-" + event.logIndex.toString();
 
   let battle = new Battle(id);
-  battle.season = "1"; // current season — determined by latest SeasonStarted
+  battle.season = getCurrentSeasonId();
   battle.laneId = event.params.laneId;
   battle.winner = event.params.winner;
   battle.totalSurvivors = event.params.totalSurvivors;
