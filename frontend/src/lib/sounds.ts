@@ -68,3 +68,17 @@ export function playConfirm() {
   playTone(880, 0.12, "sine", 0.06);
   setTimeout(() => playTone(1100, 0.15, "sine", 0.06), 120);
 }
+
+/** Triumphant ascending — player's faction won */
+export function playVictory() {
+  playTone(523, 0.15, "triangle", 0.08);
+  setTimeout(() => playTone(659, 0.15, "triangle", 0.08), 150);
+  setTimeout(() => playTone(784, 0.15, "triangle", 0.08), 300);
+  setTimeout(() => playTone(1047, 0.3, "triangle", 0.1), 450);
+}
+
+/** Descending minor — player's faction lost */
+export function playDefeat() {
+  playTone(440, 0.2, "sine", 0.07);
+  setTimeout(() => playTone(370, 0.3, "sine", 0.06), 200);
+}

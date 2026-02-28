@@ -26,7 +26,15 @@ interface GameMapProps {
   onRollSpecialEvent?: () => void;
   isRollingWeather?: boolean;
   isRollingEvent?: boolean;
+  battleFlashLane?: number | null;
 }
+
+const WEATHER_CSS_CLASS: Record<number, string> = {
+  0: "",
+  1: "weather-rainy",
+  2: "weather-sunny",
+  3: "weather-foggy",
+};
 
 const UNIT_TYPES = [UNIT_TYPE.SWORDSMAN, UNIT_TYPE.SPEARMAN, UNIT_TYPE.CAVALRY];
 
@@ -73,9 +81,15 @@ function SquadLine({ s, isBastion = true, address }: { s: SegmentSquad; isBastio
   const isOwn = address && s.owner.toLowerCase() === address.toLowerCase();
   return (
     <span className={`text-[9px] ${colorClass} font-bold leading-tight ${isOwn ? "ring-1 ring-yellow-400 rounded px-0.5" : ""}`}>
+      {s.isMarching && s.faction === FACTION.SHIB && (
+        <span className="march-left text-[7px]">&lt;</span>
+      )}
       {isOwn && "★"}{isBastion && factionEmoji}{s.effectiveUnits}{UNIT_EMOJI[s.unitType] || ""}
       {showTimer && (
         <span className="ml-0.5" style={{ color: "var(--accent-yellow)" }}>⏳{formatTimeRemaining(s.arrivalTime)}</span>
+      )}
+      {s.isMarching && s.faction === FACTION.PEPE && (
+        <span className="march-right text-[7px]">&gt;</span>
       )}
     </span>
   );
@@ -133,14 +147,16 @@ function Segment({
   const hasSquads = squads.length > 0;
   const hasOwnSquad = address && squads.some((s) => s.owner.toLowerCase() === address.toLowerCase());
 
+  const hasPepe = squads.some((s) => s.faction === FACTION.PEPE);
+  const hasShib = squads.some((s) => s.faction === FACTION.SHIB);
+  const contested = isBastion && hasPepe && hasShib;
+
   let bgClass = "bg-game-card";
-  if (isBastion) bgClass = "bg-bastion/30 bastion-glow";
+  if (isBastion) bgClass = contested ? "bg-red-900/20 contested-glow" : "bg-bastion/30 bastion-glow";
   else if (isPepeSide) bgClass = "bg-pepe/10";
   else if (isShibSide) bgClass = "bg-shib/10";
 
   if (hasSquads && !isBastion) {
-    const hasPepe = squads.some((s) => s.faction === FACTION.PEPE);
-    const hasShib = squads.some((s) => s.faction === FACTION.SHIB);
     if (hasPepe && hasShib) bgClass = "bg-yellow-900/30";
     else if (hasPepe) bgClass = "bg-pepe/20";
     else if (hasShib) bgClass = "bg-shib/20";
@@ -226,6 +242,7 @@ function LaneRow({
   resolvingLane,
   killPot,
   address,
+  battleFlashLane,
 }: {
   laneId: number;
   pepeScore: bigint;
@@ -235,15 +252,17 @@ function LaneRow({
   resolvingLane?: number | null;
   killPot?: { pepe: bigint; shib: bigint };
   address?: string;
+  battleFlashLane?: number | null;
 }) {
   const bastionSquads = segments[BASTION_SEGMENT] || [];
   const hasPepeInBastion = bastionSquads.some((s) => s.faction === FACTION.PEPE);
   const hasShibInBastion = bastionSquads.some((s) => s.faction === FACTION.SHIB);
   const contested = hasPepeInBastion && hasShibInBastion;
   const isResolving = resolvingLane === laneId;
+  const isFlashing = battleFlashLane === laneId;
 
   return (
-    <div className="space-y-2">
+    <div className={`space-y-2 ${isFlashing ? "battle-flash" : ""}`}>
       <div className="flex items-center justify-between text-xs px-1" style={{ color: "var(--text-secondary)" }}>
         <span className="flex items-center gap-2">
           Lane {laneId + 1}
@@ -297,6 +316,7 @@ export default function GameMap({
   isRollingWeather,
   isRollingEvent,
   address,
+  battleFlashLane,
 }: GameMapProps) {
   const [now, setNow] = useState(Math.floor(Date.now() / 1000));
   useEffect(() => {
@@ -307,8 +327,10 @@ export default function GameMap({
   const weatherCooldownEnd = weatherSetAt > 0 ? weatherSetAt + WEATHER_INTERVAL : 0;
   const weatherRemaining = weatherCooldownEnd > now ? weatherCooldownEnd - now : 0;
 
+  const weatherClass = WEATHER_CSS_CLASS[weather] || "";
+
   return (
-    <div className="card space-y-6">
+    <div className={`card space-y-6 ${weatherClass}`}>
       {/* Header: Weather + Controls */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-bold">⚔️ Battlefield</h2>
@@ -400,6 +422,7 @@ export default function GameMap({
           resolvingLane={resolvingLane}
           killPot={killPots?.[i]}
           address={address}
+          battleFlashLane={battleFlashLane}
         />
       ))}
     </div>

@@ -8,6 +8,7 @@ import DeployPanel from "./components/DeployPanel";
 import RewardsPanel from "./components/RewardsPanel";
 import RulesPage from "./components/RulesPage";
 import BattleLog from "./components/BattleLog";
+import BattleToast from "./components/BattleToast";
 import { FACTION, WEATHER_INTERVAL } from "./lib/constants";
 import { isMuted, toggleMute, playBattle, playWeatherChange, playSeasonEvent } from "./lib/sounds";
 import {
@@ -81,13 +82,31 @@ export default function App() {
 
   // Resolve battle
   const [resolvingLane, setResolvingLane] = useState<number | null>(null);
+  const [battleFlashLane, setBattleFlashLane] = useState<number | null>(null);
+  const [toastData, setToastData] = useState<{ winner: number; laneId: number; survivors: number; earnings: string } | null>(null);
   const { writeContract: resolveBattle, data: resolveTx } = useWriteContract();
   const { isSuccess: resolveSuccess } = useWaitForTransactionReceipt({ hash: resolveTx });
 
   if (resolveSuccess && resolvingLane !== null) {
+    const flashLane = resolvingLane;
     setResolvingLane(null);
-    gameState.refetch();
+    setBattleFlashLane(flashLane);
     playBattle();
+    // Delayed refetch — let flash animation play
+    setTimeout(() => {
+      setBattleFlashLane(null);
+      gameState.refetch();
+      // Show toast from latest battle
+      if (history.length > 0) {
+        const latest = history[0];
+        setToastData({
+          winner: latest.winner,
+          laneId: latest.laneId,
+          survivors: Number(latest.totalSurvivors),
+          earnings: `$${(Number(latest.winnerPot) / 1e6).toFixed(2)}`,
+        });
+      }
+    }, 1200);
   }
 
   const handleResolveBattle = (laneId: number) => {
@@ -268,6 +287,7 @@ export default function App() {
             onRollSpecialEvent={address ? handleRollEvent : undefined}
             isRollingWeather={rollingWeather}
             isRollingEvent={rollingEvent}
+            battleFlashLane={battleFlashLane}
           />
 
           {/* Game Info Bar */}
@@ -374,6 +394,9 @@ export default function App() {
       <footer className="border-t border-game-border px-6 py-4 text-center text-xs" style={{ color: "var(--text-muted)" }}>
         PEPE vs SHIB Battle Arena — Built on Base L2 — USDC Economy
       </footer>
+
+      {/* Battle result toast */}
+      <BattleToast data={toastData} />
     </div>
   );
 }
