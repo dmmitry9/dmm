@@ -64,17 +64,22 @@ export default function SeasonInfo({
   const currentTreasuryAllowance = (treasuryAllowance as bigint | undefined) ?? 0n;
   const hasDonateAllowance = donateAmountRaw > 0n && currentTreasuryAllowance >= donateAmountRaw;
 
+  const [pendingApprove, setPendingApprove] = useState(false);
+  const [pendingDonate, setPendingDonate] = useState(false);
+
   const { writeContract: approveTreasury, data: approveDonateTx } = useWriteContract();
   const { writeContract: donateTx, data: donateHash } = useWriteContract();
 
   const { isLoading: isApprovingDonate, isSuccess: approveDonateSuccess } = useWaitForTransactionReceipt({ hash: approveDonateTx });
   const { isLoading: isDonating, isSuccess: donateSuccess } = useWaitForTransactionReceipt({ hash: donateHash });
 
-  if (approveDonateSuccess) {
+  if (approveDonateSuccess && pendingApprove) {
+    setPendingApprove(false);
     refetchAllowance();
   }
 
-  if (donateSuccess) {
+  if (donateSuccess && pendingDonate) {
+    setPendingDonate(false);
     setDonateAmount("");
     setShowDonate(false);
     onDonated?.();
@@ -83,6 +88,7 @@ export default function SeasonInfo({
 
   const handleApproveDonate = () => {
     if (donateAmountRaw <= 0n) return;
+    setPendingApprove(true);
     approveTreasury({
       address: ADDRESSES.usdc,
       abi: ERC20_ABI,
@@ -93,6 +99,7 @@ export default function SeasonInfo({
 
   const handleDonate = () => {
     if (!seasonId || donateAmountRaw <= 0n) return;
+    setPendingDonate(true);
     donateTx({
       address: ADDRESSES.treasury,
       abi: TREASURY_ABI,
