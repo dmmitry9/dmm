@@ -919,22 +919,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
             }
             uint256 eff = _getEffectiveUnitsFromRef(s);
             if (eff == 0) {
-                // Credit zombie's accumulated hold score for this period BEFORE cleanup
-                if (!b.contestedAtUpdate) {
-                    uint256 periodStartHours;
-                    if (b.lastHoldScoreUpdate > s.bastionEnteredAt) {
-                        periodStartHours = (b.lastHoldScoreUpdate - s.bastionEnteredAt) / ATTRITION_TICK;
-                    }
-                    if (periodStartHours <= 168) {
-                        uint256 effAtPeriodStart = (uint256(s.initialCount) * _getAttrition(periodStartHours)) / 10_000;
-                        if (effAtPeriodStart > 0) {
-                            if (s.faction == Faction.PEPE) pepeUnits += effAtPeriodStart;
-                            else shibUnits += effAtPeriodStart;
-                            playerStats[currentSeasonId][s.owner].holdScoreContrib += uint128(effAtPeriodStart * minutesDelta);
-                            playerLaneScores[currentSeasonId][s.owner][laneId] += uint128(effAtPeriodStart * minutesDelta);
-                        }
-                    }
-                }
+                // Zombie cleanup — no bonus credit (they were credited while alive)
                 uint256 fullKillPot = (uint256(s.costPaid) * SPLIT_KILL_REWARD) / BPS_DENOM;
                 uint256 attritionPot = s.originalCount > 0 ? (fullKillPot * uint256(s.initialCount)) / uint256(s.originalCount) : fullKillPot;
                 s.active = false;
