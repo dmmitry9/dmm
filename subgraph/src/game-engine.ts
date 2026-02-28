@@ -201,7 +201,7 @@ export function handleUnitsDeployed(event: UnitsDeployed): void {
   squad.active = true;
   squad.deployedAt = event.block.timestamp;
   squad.bastionEnteredAt = null;
-  squad.initialCount = BigInt.fromI32(event.params.count);
+  squad.initialCount = event.params.count;
   squad.costPaid = event.params.cost;
   squad.season = seasonId; // Will be updated when we can determine current season
   squad.arrivedAt = null;
