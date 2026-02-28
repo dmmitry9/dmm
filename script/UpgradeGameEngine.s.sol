@@ -46,9 +46,15 @@ contract UpgradeGameEngineScript is Script {
         SeasonNFT(SEASON_NFT).setMinter(address(gameEngine));
         console.log("SeasonNFT.setMinter() done");
 
-        // ── Step 4: Start Season 1 ───────────────────
+        // ── Step 4: Bootstrap → skip colliding Season 1 → start Season 2
         gameEngine.startSeason();
-        console.log("Season 1 started on new GameEngine");
+        console.log("Season 1 started (will skip - collides with Treasury)");
+
+        gameEngine.skipSeason();
+        console.log("Season 1 skipped");
+
+        gameEngine.startNextSeason();
+        console.log("Season 2 started (clean, no Treasury collision)");
 
         vm.stopBroadcast();
 

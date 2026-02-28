@@ -520,6 +520,13 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         emit SeasonEnded(currentSeasonId, winner);
     }
 
+    /// @notice Owner-only: skip a stuck season (e.g. Treasury already finalized this seasonId).
+    function skipSeason() external onlyOwner {
+        require(seasonActive, "No active season");
+        seasonActive = false;
+        emit SeasonEnded(currentSeasonId, Faction.PEPE);
+    }
+
     /// @notice Bootstrap season 1. Owner-only.
     function startSeason() external onlyOwner {
         require(!seasonActive, "Season already active");
