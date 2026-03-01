@@ -326,6 +326,7 @@ export default function GameMap({
 
   const weatherCooldownEnd = weatherSetAt > 0 ? weatherSetAt + WEATHER_INTERVAL : 0;
   const weatherRemaining = weatherCooldownEnd > now ? weatherCooldownEnd - now : 0;
+  const eventRemaining = specialEventEndsAt > now ? specialEventEndsAt - now : 0;
 
   const weatherClass = WEATHER_CSS_CLASS[weather] || "";
 
@@ -365,9 +366,9 @@ export default function GameMap({
           {specialEvent > 0 ? (
             <span className="px-2 py-0.5 rounded inline-flex items-center gap-1.5" style={{ backgroundColor: "var(--panel-bg)", color: "var(--accent-purple)" }}>
               {EVENT_EMOJI[specialEvent]} {EVENT_LABELS[specialEvent]}
-              <span style={{ color: "var(--text-muted)" }}>
-                ({formatTimeRemaining(specialEventEndsAt)})
-              </span>
+              {eventRemaining > 0 && (
+                <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>⏳{formatTime(eventRemaining)}</span>
+              )}
               {onRollSpecialEvent && (
                 <button
                   onClick={onRollSpecialEvent}
@@ -400,7 +401,7 @@ export default function GameMap({
         </div>
 
         <div className="flex items-center gap-2 text-xs">
-          {/* Refresh button */}
+          {/* Sync button */}
           {onRefreshScores && (
             <button
               onClick={onRefreshScores}
@@ -411,9 +412,9 @@ export default function GameMap({
                 color: isRefreshingScores ? "var(--text-muted)" : "#fff",
                 cursor: isRefreshingScores ? "not-allowed" : "pointer",
               }}
-              title="Refresh hold scores & clean zombie squads (1 tx)"
+              title="Sync hold scores & process arrivals (1 tx)"
             >
-              {isRefreshingScores ? "⏳..." : "♻️ Refresh"}
+              {isRefreshingScores ? "⏳..." : "⚡ Sync"}
             </button>
           )}
         </div>
