@@ -95,8 +95,8 @@ contract InvariantEconomy is BaseTest {
 
         for (uint8 f = 1; f <= 2; f++) {
             uint256 price = treasury.getUnitPrice(f, 1, totalPEPE, totalSHIB);
-            assertGe(price, 5_000_000, "Price below $5");
-            assertLe(price, 7_000_000, "Price above $7");
+            assertGe(price, 1_000_000, "Price below $1");
+            assertLe(price, 1_400_000, "Price above $1.40");
         }
     }
 

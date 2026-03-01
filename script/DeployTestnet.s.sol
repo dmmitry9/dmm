@@ -41,12 +41,11 @@ contract DeployTestnetScript is Script {
         console.log("SeasonNFT deployed:", address(seasonNFT));
 
         // ── Step 3: Deploy Treasury ─────────────────
-        // Deployer acts as creators + buyback wallet on testnet
+        // Deployer acts as protocol wallet on testnet
         Treasury treasury = new Treasury(
             address(usdc),
             address(0),    // gameEngine — set after
-            deployer,      // creatorsWallet
-            deployer       // buybackWallet
+            deployer       // protocolWallet
         );
         console.log("Treasury deployed:", address(treasury));
 

@@ -115,7 +115,7 @@ stoic-rosalind/
 | `useUSDCBalance(address)` | MockUSDC balance | 30s |
 | `usePendingRewards(address)` | Claimable USDC rewards | 15s |
 | `useUnitPrice(faction, count, totalPEPE, totalSHIB)` | Unit cost estimate | on demand |
-| `useTreasuryBreakdown(seasonId)` | Kill pots (3 lanes × 2 factions), season pool, creators, buyback | 15s |
+| `useTreasuryBreakdown(seasonId)` | Kill pots (3 lanes × 2 factions), season pool, protocol fee | 15s |
 | `useLaneSquads()` | 3-step multicall: counts → IDs → details. Returns `[lane][segment][]` | 15s |
 | `useBattleHistory()` | BattleResolved events from last 50k blocks, top 10 | 30s |
 
@@ -174,10 +174,10 @@ stoic-rosalind/
 - **Battle:** Combat power = effective × RPS multiplier × weather bonus
 
 ### Treasury.sol
-- **USDC distribution:** 70% kill pot, 8% season pool, 10% next season, 5% +2 seasons, 2% creators, 5% buyback
+- **USDC distribution:** 70% kill pot, 12% season pool, 10% next season, 5% +2 seasons, 3% protocol fee
 - **Kill pot:** Winner takes remaining proportional kill pot, attrition-reduced portions go to season treasury
 - **Bastion farming:** Hold score = units × minutes → determines season treasury share
-- **Pricing:** $5-$7 USDC per unit, scales with supply imbalance
+- **Pricing:** $1-$1.40 USDC per unit, scales with supply imbalance
 
 ### SeasonNFT.sol
 - SVG-based on-chain NFTs for top 3 players of winning faction per season

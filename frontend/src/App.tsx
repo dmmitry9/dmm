@@ -46,16 +46,7 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
-  if (showRules) {
-    return (
-      <RulesPage
-        onBack={() => {
-          window.location.hash = "";
-          setShowRules(false);
-        }}
-      />
-    );
-  }
+  // All hooks called unconditionally (React Rules of Hooks)
   const { address } = useAccount();
   const gameState = useGameState();
   const { lanes } = useLaneScores();
@@ -223,6 +214,17 @@ export default function App() {
   const seasonExpired = gameState.seasonActive && gameState.seasonStartTime
     ? now >= Number(gameState.seasonStartTime) + 20160
     : false;
+
+  if (showRules) {
+    return (
+      <RulesPage
+        onBack={() => {
+          window.location.hash = "";
+          setShowRules(false);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--game-bg)", color: "var(--text-primary)" }}>

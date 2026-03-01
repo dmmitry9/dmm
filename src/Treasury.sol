@@ -19,18 +19,17 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
 
     // Economic splits (basis points, sum = 10000)
     uint256 public constant SPLIT_KILL_REWARD    = 7_000; // 70% → killPot
-    uint256 public constant SPLIT_TREASURY_NOW   =   800; //  8% → current season treasury
+    uint256 public constant SPLIT_TREASURY_NOW   = 1_200; // 12% → current season treasury
     uint256 public constant SPLIT_TREASURY_NEXT  = 1_000; // 10% → next season treasury
     uint256 public constant SPLIT_TREASURY_NEXT2 =   500; //  5% → season+2 treasury
-    uint256 public constant SPLIT_CREATORS       =   200; //  2% → creators
-    uint256 public constant SPLIT_BUYBACK        =   500; //  5% → buyback reserve
+    uint256 public constant SPLIT_PROTOCOL       =   300; //  3% → protocol fee
     uint256 public constant BPS_DENOM            = 10_000;
 
     // Pricing (USDC 6 decimals)
-    uint256 public constant BASE_PRICE_USDC = 5_000_000; // $5
-    uint256 public constant MAX_PRICE_USDC  = 7_000_000; // $7
-    uint256 public constant SURGE_START     = 100;        // diff threshold to start price increase
-    uint256 public constant SURGE_END       = 1000;       // diff threshold for max price
+    uint256 public constant BASE_PRICE_USDC = 1_000_000; // $1
+    uint256 public constant MAX_PRICE_USDC  = 1_400_000; // $1.40
+    uint256 public constant SURGE_START     = 2_000;      // diff threshold to start price increase
+    uint256 public constant SURGE_END       = 20_000;     // diff threshold for max price
 
     // VRF timing
     uint256 public constant WEATHER_INTERVAL      = 6 hours;
@@ -53,8 +52,7 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
     event Withdrawn(address indexed player, uint256 amount);
     event TreasurySeeded(uint256 indexed seasonId, uint256 amount);
     event TreasuryDonation(uint256 indexed seasonId, address indexed donor, uint256 amount);
-    event CreatorsWithdrawn(address indexed to, uint256 amount);
-    event BuybackWithdrawn(address indexed to, uint256 amount);
+    event ProtocolWithdrawn(address indexed to, uint256 amount);
     event WeatherRequested(uint256 requestId);
     event SpecialEventRequested(uint256 requestId);
 
@@ -86,11 +84,9 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
     // Pull-payment balances
     mapping(address => uint256) public pendingRewards;
 
-    // Creator & buyback reserves
-    uint256 public creatorsBalance;
-    uint256 public buybackReserve;
-    address public creatorsWallet;
-    address public buybackWallet;
+    // Protocol fee reserve
+    uint256 public protocolBalance;
+    address public protocolWallet;
 
     // Current season reference (set from GameEngine via finalizeSeason)
     uint256 public currentSeasonId;
@@ -121,16 +117,13 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
     constructor(
         address _usdc,
         address _gameEngine,
-        address _creatorsWallet,
-        address _buybackWallet
+        address _protocolWallet
     ) Ownable(msg.sender) {
         require(_usdc != address(0), "Invalid USDC address");
-        require(_creatorsWallet != address(0), "Invalid creators wallet");
-        require(_buybackWallet != address(0), "Invalid buyback wallet");
+        require(_protocolWallet != address(0), "Invalid protocol wallet");
 
         usdc = IERC20(_usdc);
-        creatorsWallet = _creatorsWallet;
-        buybackWallet = _buybackWallet;
+        protocolWallet = _protocolWallet;
 
         // gameEngine can be set later if circular deployment needed
         if (_gameEngine != address(0)) {
@@ -148,16 +141,10 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
         gameEngine = IGameEngine(_gameEngine);
     }
 
-    /// @notice Update creators wallet.
-    function setCreatorsWallet(address _wallet) external onlyOwner {
+    /// @notice Update protocol wallet.
+    function setProtocolWallet(address _wallet) external onlyOwner {
         require(_wallet != address(0), "Invalid address");
-        creatorsWallet = _wallet;
-    }
-
-    /// @notice Update buyback wallet.
-    function setBuybackWallet(address _wallet) external onlyOwner {
-        require(_wallet != address(0), "Invalid address");
-        buybackWallet = _wallet;
+        protocolWallet = _wallet;
     }
 
     /// @notice Configure Chainlink VRF v2 parameters.
@@ -191,7 +178,7 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
         uint256 killPortion = (amount * SPLIT_KILL_REWARD) / BPS_DENOM;
         killPot[laneId][faction] += killPortion;
 
-        // 8% → current season treasury
+        // 12% → current season treasury
         uint256 treasuryNow = (amount * SPLIT_TREASURY_NOW) / BPS_DENOM;
         seasonTreasury[seasonId] += treasuryNow;
 
@@ -203,13 +190,9 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
         uint256 treasuryNext2 = (amount * SPLIT_TREASURY_NEXT2) / BPS_DENOM;
         seasonTreasury[seasonId + 2] += treasuryNext2;
 
-        // 2% → creators
-        uint256 creatorsPortion = (amount * SPLIT_CREATORS) / BPS_DENOM;
-        creatorsBalance += creatorsPortion;
-
-        // 5% → buyback
-        uint256 buybackPortion = (amount * SPLIT_BUYBACK) / BPS_DENOM;
-        buybackReserve += buybackPortion;
+        // 3% → protocol fee
+        uint256 protocolPortion = (amount * SPLIT_PROTOCOL) / BPS_DENOM;
+        protocolBalance += protocolPortion;
 
         // Track current season
         if (seasonId > currentSeasonId) {
@@ -257,7 +240,7 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
         }
 
         // Dominant faction: linear price ramp from BASE to MAX
-        // based on unit difference (SURGE_START..SURGE_END → $5..$7)
+        // based on unit difference (SURGE_START..SURGE_END → $1..$1.40)
         uint256 diff = dominant - underdog;
         if (diff <= SURGE_START) {
             return BASE_PRICE_USDC * count;
@@ -507,28 +490,16 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
         emit TreasuryDonation(seasonId, msg.sender, amount);
     }
 
-    /// @notice Creators withdraw accumulated fees.
-    function withdrawCreators() external nonReentrant {
-        require(msg.sender == creatorsWallet, "Not creators wallet");
-        uint256 amount = creatorsBalance;
+    /// @notice Protocol wallet withdraws accumulated fees.
+    function withdrawProtocol() external nonReentrant {
+        require(msg.sender == protocolWallet, "Not protocol wallet");
+        uint256 amount = protocolBalance;
         require(amount > 0, "Nothing to withdraw");
 
-        creatorsBalance = 0;
-        require(usdc.transfer(creatorsWallet, amount), "USDC transfer failed");
+        protocolBalance = 0;
+        require(usdc.transfer(protocolWallet, amount), "USDC transfer failed");
 
-        emit CreatorsWithdrawn(creatorsWallet, amount);
-    }
-
-    /// @notice Buyback wallet withdraws accumulated reserve.
-    function withdrawBuyback() external nonReentrant {
-        require(msg.sender == buybackWallet, "Not buyback wallet");
-        uint256 amount = buybackReserve;
-        require(amount > 0, "Nothing to withdraw");
-
-        buybackReserve = 0;
-        require(usdc.transfer(buybackWallet, amount), "USDC transfer failed");
-
-        emit BuybackWithdrawn(buybackWallet, amount);
+        emit ProtocolWithdrawn(protocolWallet, amount);
     }
 
     // ═══════════════════════════════════════════

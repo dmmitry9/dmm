@@ -5,8 +5,8 @@ import {BaseTest} from "../BaseTest.sol";
 import {UnitType, Faction} from "../../src/types/GameTypes.sol";
 
 contract FuzzPricing is BaseTest {
-    uint256 constant BASE = 5_000_000;
-    uint256 constant MAX  = 7_000_000;
+    uint256 constant BASE = 1_000_000;
+    uint256 constant MAX  = 1_400_000;
 
     // ── Price always in [BASE*count, MAX*count] ──────────────────
 

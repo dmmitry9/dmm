@@ -25,20 +25,17 @@ import {SeasonNFT} from "../src/SeasonNFT.sol";
 ///   Required env vars:
 ///     DEPLOYER_PRIVATE_KEY — deployer wallet private key
 ///     USDC_ADDRESS         — USDC token address on target chain
-///     CREATORS_WALLET      — creators fee recipient
-///     BUYBACK_WALLET       — buyback reserve recipient
+///     PROTOCOL_WALLET      — protocol fee recipient
 contract DeployScript is Script {
     function run() external {
         // ── Read env ──────────────────────────────
         uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address usdc = vm.envAddress("USDC_ADDRESS");
-        address creatorsWallet = vm.envAddress("CREATORS_WALLET");
-        address buybackWallet = vm.envAddress("BUYBACK_WALLET");
+        address protocolWallet = vm.envAddress("PROTOCOL_WALLET");
 
         console.log("Deployer:", vm.addr(deployerKey));
         console.log("USDC:", usdc);
-        console.log("Creators wallet:", creatorsWallet);
-        console.log("Buyback wallet:", buybackWallet);
+        console.log("Protocol wallet:", protocolWallet);
 
         vm.startBroadcast(deployerKey);
 
@@ -50,8 +47,7 @@ contract DeployScript is Script {
         Treasury treasury = new Treasury(
             usdc,
             address(0),        // gameEngine — set after deployment
-            creatorsWallet,
-            buybackWallet
+            protocolWallet
         );
         console.log("Treasury deployed:", address(treasury));
 

@@ -242,8 +242,7 @@ export function useUnitPrice(
 export interface TreasuryBreakdown {
   killPots: { pepe: bigint; shib: bigint }[];
   seasonTreasury: bigint;
-  creatorsBalance: bigint;
-  buybackReserve: bigint;
+  protocolBalance: bigint;
 }
 
 export function useTreasuryBreakdown(seasonId: bigint | undefined): TreasuryBreakdown {
@@ -271,17 +270,11 @@ export function useTreasuryBreakdown(seasonId: bigint | undefined): TreasuryBrea
         functionName: "getSeasonTreasury" as const,
         args: [seasonId ?? 1n] as const,
       },
-      // Creators balance
+      // Protocol balance
       {
         address: ADDRESSES.treasury,
         abi: TREASURY_ABI,
-        functionName: "creatorsBalance" as const,
-      },
-      // Buyback reserve
-      {
-        address: ADDRESSES.treasury,
-        abi: TREASURY_ABI,
-        functionName: "buybackReserve" as const,
+        functionName: "protocolBalance" as const,
       },
     ],
     query: { refetchInterval: 15_000, enabled: seasonId !== undefined },
@@ -295,8 +288,7 @@ export function useTreasuryBreakdown(seasonId: bigint | undefined): TreasuryBrea
   return {
     killPots,
     seasonTreasury: (data?.[6]?.result as bigint) ?? 0n,
-    creatorsBalance: (data?.[7]?.result as bigint) ?? 0n,
-    buybackReserve: (data?.[8]?.result as bigint) ?? 0n,
+    protocolBalance: (data?.[7]?.result as bigint) ?? 0n,
   };
 }
 

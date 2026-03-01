@@ -24,7 +24,7 @@ On-chain strategy game on Base L2 where two factions (PEPE, SHIB) compete for co
 ```
 1. MockUSDC (or real USDC address on Base)
 2. SeasonNFT()
-3. Treasury(usdc, address(0), creatorsWallet, buybackWallet)
+3. Treasury(usdc, address(0), protocolWallet)
 4. GameEngine(usdc, treasury, seasonNFT)
 5. treasury.setGameEngine(engine)
 6. seasonNFT.setMinter(engine)
@@ -80,17 +80,16 @@ GameEngine → SeasonNFT:
 | Split | BPS | Destination |
 |-------|-----|-------------|
 | Kill Reward | 7000 (70%) | `killPot[laneId][faction]` |
-| Current Season | 800 (8%) | `seasonTreasury[currentSeasonId]` |
+| Current Season | 1200 (12%) | `seasonTreasury[currentSeasonId]` |
 | Next Season | 1000 (10%) | `seasonTreasury[currentSeasonId + 1]` |
 | Season + 2 | 500 (5%) | `seasonTreasury[currentSeasonId + 2]` |
-| Creators | 200 (2%) | `creatorBalance` |
-| Buyback | 500 (5%) | `buybackBalance` |
+| Protocol Fee | 300 (3%) | `protocolBalance` |
 | **Total** | **10000** | |
 
 ### Dynamic Pricing
 
-- Base price: $5 USDC per unit
-- Max price: $7 USDC per unit
+- Base price: $1 USDC per unit
+- Max price: $1.40 USDC per unit
 - Underdog faction (fewer units) always pays base price
 - Dominant faction pays `base + (base * imbalanceRatio * SURGE_BPS) / BPS_DENOM`, capped at max
 
@@ -130,7 +129,7 @@ GameEngine → SeasonNFT:
 1. **USDC conservation**: `treasury.balanceOf(usdc) == ghost_totalDeposited - ghost_totalWithdrawn`
 2. **Claimable solvency**: `sum(killPots) + sum(pendingRewards) ≤ treasury.balance`
 3. **Kill pot bounded**: Each individual kill pot ≤ total treasury balance
-4. **Pricing bounds**: Unit price always in [$5, $7] range for current game state
+4. **Pricing bounds**: Unit price always in [$1, $1.40] range for current game state
 5. **Unit counts bounded**: `totalUnitsPEPE ≤ ghost_totalPepeDeployed` (never exceeds total ever deployed)
 6. **Hold score monotonicity**: Hold scores only increase within a season
 7. **Handler coverage**: All 7 action types (deploy, arrive, retreat, withdraw, advanceTime, refreshHoldScore, changeWeather) exercised
@@ -198,8 +197,7 @@ Weather and special events are set via Chainlink VRF callbacks. Rate-limited to 
 | `withdraw()` | Any player | `nonReentrant` |
 | `seedTreasury()` | Anyone | None |
 | `donate()` | Anyone | None |
-| `withdrawCreators()` | Creators wallet | `msg.sender == creatorsWallet` |
-| `withdrawBuyback()` | Buyback wallet | `msg.sender == buybackWallet` |
+| `withdrawProtocol()` | Protocol wallet | `msg.sender == protocolWallet` |
 | `requestWeatherUpdate()` | Anyone | Rate-limited (1h cooldown) |
 | `requestSpecialEvent()` | Anyone | Rate-limited (4h cooldown) |
 | `rawFulfillRandomWords()` | VRF coordinator | `msg.sender == vrfCoordinator` |

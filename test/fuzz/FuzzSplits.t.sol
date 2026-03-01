@@ -5,12 +5,11 @@ import {BaseTest} from "../BaseTest.sol";
 import {UnitType, Faction} from "../../src/types/GameTypes.sol";
 
 contract FuzzSplits is BaseTest {
-    uint256 constant SPLIT_KILL    = 7_000;
-    uint256 constant SPLIT_NOW     =   800;
-    uint256 constant SPLIT_NEXT    = 1_000;
-    uint256 constant SPLIT_NEXT2   =   500;
-    uint256 constant SPLIT_CREATE  =   200;
-    uint256 constant SPLIT_BUYBACK =   500;
+    uint256 constant SPLIT_KILL     = 7_000;
+    uint256 constant SPLIT_NOW      = 1_200;
+    uint256 constant SPLIT_NEXT     = 1_000;
+    uint256 constant SPLIT_NEXT2    =   500;
+    uint256 constant SPLIT_PROTOCOL =   300;
 
     // ── Sum of all splits <= amount, dust <= 5 wei ───────────────
 
@@ -22,8 +21,7 @@ contract FuzzSplits is BaseTest {
 
         // Snapshot before
         uint256 killBefore = treasury.killPot(0, 1);
-        uint256 creatorsBefore = treasury.creatorsBalance();
-        uint256 buybackBefore = treasury.buybackReserve();
+        uint256 protocolBefore = treasury.protocolBalance();
         uint256 treasNow = treasury.seasonTreasury(seasonId);
         uint256 treasNext = treasury.seasonTreasury(seasonId + 1);
         uint256 treasNext2 = treasury.seasonTreasury(seasonId + 2);
@@ -36,18 +34,17 @@ contract FuzzSplits is BaseTest {
 
         // Compute deltas
         uint256 killDelta = treasury.killPot(0, 1) - killBefore;
-        uint256 creatorsDelta = treasury.creatorsBalance() - creatorsBefore;
-        uint256 buybackDelta = treasury.buybackReserve() - buybackBefore;
+        uint256 protocolDelta = treasury.protocolBalance() - protocolBefore;
         uint256 treasuryDelta = (treasury.seasonTreasury(seasonId) - treasNow)
             + (treasury.seasonTreasury(seasonId + 1) - treasNext)
             + (treasury.seasonTreasury(seasonId + 2) - treasNext2);
 
-        uint256 totalSplit = killDelta + creatorsDelta + buybackDelta + treasuryDelta;
+        uint256 totalSplit = killDelta + protocolDelta + treasuryDelta;
 
         // Conservation: no money created
         assertLe(totalSplit, amount, "Splits exceed amount");
-        // Dust is tiny (5 independent divisions → max 5 wei lost)
-        assertGe(totalSplit, amount - 5, "Too much dust");
+        // Dust is tiny (4 independent divisions → max 4 wei lost)
+        assertGe(totalSplit, amount - 4, "Too much dust");
     }
 
     // ── Each split matches floor(amount * bps / 10000) ───────────
@@ -59,8 +56,7 @@ contract FuzzSplits is BaseTest {
         uint256 seasonId = engine.currentSeasonId();
 
         uint256 killBefore = treasury.killPot(0, 1);
-        uint256 creatorsBefore = treasury.creatorsBalance();
-        uint256 buybackBefore = treasury.buybackReserve();
+        uint256 protocolBefore = treasury.protocolBalance();
         uint256 treasNow = treasury.seasonTreasury(seasonId);
         uint256 treasNext = treasury.seasonTreasury(seasonId + 1);
         uint256 treasNext2 = treasury.seasonTreasury(seasonId + 2);
@@ -70,8 +66,7 @@ contract FuzzSplits is BaseTest {
         treasury.recordDeployment(alice, amount, 1, 0, seasonId);
 
         assertEq(treasury.killPot(0, 1) - killBefore, (amount * SPLIT_KILL) / BPS_DENOM, "Kill split wrong");
-        assertEq(treasury.creatorsBalance() - creatorsBefore, (amount * SPLIT_CREATE) / BPS_DENOM, "Creators split wrong");
-        assertEq(treasury.buybackReserve() - buybackBefore, (amount * SPLIT_BUYBACK) / BPS_DENOM, "Buyback split wrong");
+        assertEq(treasury.protocolBalance() - protocolBefore, (amount * SPLIT_PROTOCOL) / BPS_DENOM, "Protocol split wrong");
         assertEq(treasury.seasonTreasury(seasonId) - treasNow, (amount * SPLIT_NOW) / BPS_DENOM, "Treasury now wrong");
         assertEq(treasury.seasonTreasury(seasonId + 1) - treasNext, (amount * SPLIT_NEXT) / BPS_DENOM, "Treasury next wrong");
         assertEq(treasury.seasonTreasury(seasonId + 2) - treasNext2, (amount * SPLIT_NEXT2) / BPS_DENOM, "Treasury +2 wrong");

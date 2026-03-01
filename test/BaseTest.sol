@@ -17,8 +17,7 @@ contract BaseTest is Test {
     MockVRFCoordinator public vrfMock;
 
     address public owner    = address(0xBEEF);
-    address public creators = address(0xC0FE);
-    address public buyback  = address(0xB00B);
+    address public protocol = address(0xC0FE);
     address public alice    = address(0xA11CE);
     address public bob      = address(0xB0B);
     address public charlie  = address(0xC0C0);
@@ -37,8 +36,7 @@ contract BaseTest is Test {
         treasury = new Treasury(
             address(usdc),
             address(0), // gameEngine set later
-            creators,
-            buyback
+            protocol
         );
         engine = new GameEngine(
             address(usdc),
@@ -179,8 +177,7 @@ contract BaseTest is Test {
         uint256 seasonId = engine.currentSeasonId();
         return _sumAllKillPots()
             + _sumSeasonTreasuries(seasonId)
-            + treasury.creatorsBalance()
-            + treasury.buybackReserve()
+            + treasury.protocolBalance()
             + _sumPendingRewards();
     }
 

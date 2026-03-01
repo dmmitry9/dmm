@@ -6,9 +6,9 @@ interface ITreasury {
     //          GAME ENGINE → TREASURY
     // ═══════════════════════════════════════════
 
-    /// @notice Record a deployment and split the USDC across killPot, treasury, creators, buyback.
+    /// @notice Record a deployment and split the USDC across killPot, treasury, protocol fee.
     /// @dev    GameEngine transfers USDC to Treasury before calling this.
-    ///         70% → killPot[laneId][faction], 30% → treasury/creators/buyback.
+    ///         70% → killPot[laneId][faction], 30% → treasury/protocol.
     function recordDeployment(
         address payer,
         uint256 amount,

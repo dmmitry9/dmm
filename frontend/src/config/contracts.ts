@@ -374,14 +374,7 @@ export const TREASURY_ABI = [
     outputs: [{ type: "uint256" }],
   },
   {
-    name: "creatorsBalance",
-    type: "function",
-    stateMutability: "view",
-    inputs: [],
-    outputs: [{ type: "uint256" }],
-  },
-  {
-    name: "buybackReserve",
+    name: "protocolBalance",
     type: "function",
     stateMutability: "view",
     inputs: [],

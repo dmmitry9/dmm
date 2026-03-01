@@ -22,7 +22,7 @@ contract UpgradeAllScript is Script {
         vm.startBroadcast(deployerKey);
 
         // ── Step 1: Deploy new Treasury ─────────────
-        Treasury treasury = new Treasury(USDC, address(0), deployer, deployer);
+        Treasury treasury = new Treasury(USDC, address(0), deployer);
         console.log("New Treasury deployed:", address(treasury));
 
         // ── Step 2: Deploy new GameEngine ───────────

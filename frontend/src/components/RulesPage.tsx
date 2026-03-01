@@ -33,8 +33,8 @@ export default function RulesPage({ onBack }: { onBack: () => void }) {
           <ul className="list-disc pl-5 space-y-1">
             <li>Pick <span className="text-pepe font-semibold">PEPE</span> or{" "}
               <span className="text-shib font-semibold">SHIB</span> — you are locked to one faction per season.</li>
-            <li>Base unit cost: <B>$5 USDC</B>. Max: <B>$7 USDC</B>.</li>
-            <li>Price increases linearly when the dominant faction leads by <B>100–1,000 units</B>.</li>
+            <li>Base unit cost: <B>$1 USDC</B>. Max: <B>$1.40 USDC</B>.</li>
+            <li>Price increases linearly when the dominant faction leads by <B>2,000–20,000 units</B>.</li>
             <li>The underdog faction always pays the base price — join the weaker side for cheaper units.</li>
           </ul>
         </Section>
@@ -61,7 +61,7 @@ export default function RulesPage({ onBack }: { onBack: () => void }) {
             <span>⚔️ Swordsman</span>
           </div>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Winning matchup grants a <B>1.5× combat power</B> multiplier.</li>
+            <li>Winning matchup grants a <B>1.8× combat power</B> multiplier.</li>
             <li>Choose your unit type strategically based on what the enemy has deployed.</li>
           </ul>
         </Section>
@@ -142,12 +142,14 @@ export default function RulesPage({ onBack }: { onBack: () => void }) {
           <p className="mb-2">Every USDC spent on recruitment is split:</p>
           <div className="grid grid-cols-2 gap-2 mb-3">
             <Stat label="Kill Pot (battle rewards)" value="70%" />
-            <Stat label="Current Season Pool" value="8%" />
+            <Stat label="Current Season Pool" value="12%" />
             <Stat label="Next Season Pool" value="10%" />
             <Stat label="Season +2 Pool" value="5%" />
-            <Stat label="Creators Fee" value="2%" />
-            <Stat label="Buyback Reserve" value="5%" />
+            <Stat label="Protocol Fee" value="3%" />
           </div>
+          <p className="text-xs mb-2" style={{ color: "var(--text-muted)" }}>
+            Protocol Fee covers marketing, development, and platform maintenance.
+          </p>
           <ul className="list-disc pl-5 space-y-1">
             <li>At season end, all remaining kill pots are swept into the season treasury.</li>
             <li>Next-season seeding means new seasons always start with a prize pool.</li>

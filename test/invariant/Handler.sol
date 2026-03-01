@@ -74,8 +74,8 @@ contract Handler is Test {
         // Pick or maintain faction for this player
         Faction f = _pickFaction(player, seed);
 
-        // Ensure player has enough USDC (max price = $7 * count)
-        uint256 maxCost = 7_000_000 * uint256(count);
+        // Ensure player has enough USDC (max price = $1.40 * count)
+        uint256 maxCost = 1_400_000 * uint256(count);
         _ensureBalance(player, maxCost);
 
         uint256 balBefore = usdc.balanceOf(address(treasury));
