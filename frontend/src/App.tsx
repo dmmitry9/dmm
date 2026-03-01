@@ -11,7 +11,6 @@ import BattleLog from "./components/BattleLog";
 import BattleToast from "./components/BattleToast";
 import Leaderboard from "./components/Leaderboard";
 import { FACTION, WEATHER_INTERVAL } from "./lib/constants";
-import { isMuted, toggleMute, playBattle, playWeatherChange, playSeasonEvent } from "./lib/sounds";
 import {
   useGameState,
   useLaneScores,
@@ -39,7 +38,6 @@ function useTheme() {
 
 export default function App() {
   const { theme, toggle: toggleTheme } = useTheme();
-  const [soundMuted, setSoundMuted] = useState(isMuted());
   const [showRules, setShowRules] = useState(window.location.hash === "#rules");
 
   useEffect(() => {
@@ -94,7 +92,6 @@ export default function App() {
     const flashLane = resolvingLane;
     setResolvingLane(null);
     setBattleFlashLane(flashLane);
-    playBattle();
     // Delayed refetch — let flash animation play
     setTimeout(() => {
       setBattleFlashLane(null);
@@ -187,7 +184,6 @@ export default function App() {
   if (weatherSuccess && rollingWeather) {
     setRollingWeather(false);
     gameState.refetch();
-    playWeatherChange();
   }
 
   const handleRollWeather = () => {
@@ -207,7 +203,6 @@ export default function App() {
   if (eventSuccess && rollingEvent) {
     setRollingEvent(false);
     gameState.refetch();
-    playSeasonEvent();
   }
 
   const handleRollEvent = () => {
@@ -248,13 +243,6 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              onClick={() => setSoundMuted(toggleMute())}
-              className="text-xl hover:opacity-70 transition-opacity"
-              title={soundMuted ? "Unmute sounds" : "Mute sounds"}
-            >
-              {soundMuted ? "🔇" : "🔊"}
-            </button>
             <button
               onClick={toggleTheme}
               className="text-xl hover:opacity-70 transition-opacity"

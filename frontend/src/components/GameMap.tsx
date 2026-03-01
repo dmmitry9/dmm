@@ -353,14 +353,7 @@ export default function GameMap({
             </span>
           )}
 
-          {/* Weather cooldown */}
-          {weatherRemaining > 0 && (
-            <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-              ⏳{formatTime(weatherRemaining)}
-            </span>
-          )}
-
-          {/* Roll Weather button */}
+          {/* Roll Weather button (with cooldown timer) */}
           {onRollWeather && (
             <button
               onClick={onRollWeather}
@@ -372,7 +365,7 @@ export default function GameMap({
                 cursor: weatherCooldownReady && !isRollingWeather ? "pointer" : "not-allowed",
               }}
             >
-              {isRollingWeather ? "⏳..." : "🎲 Weather"}
+              {isRollingWeather ? "⏳..." : weatherRemaining > 0 ? `⏳ ${formatTime(weatherRemaining)}` : "🎲 Weather"}
             </button>
           )}
 
