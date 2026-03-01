@@ -1,7 +1,7 @@
 # PEPE vs SHIB — Session Handoff Document
 
-> **Last updated:** 2026-02-25
-> **Branch:** `claude/stoic-rosalind`
+> **Last updated:** 2026-03-01
+> **Branch:** `claude/ecstatic-banach`
 > **Site:** https://dmmitry9.github.io/dmm/
 > **Repo:** https://github.com/dmmitry9/dmm.git
 
@@ -25,10 +25,10 @@
 
 | Contract | Address |
 |----------|---------|
-| MockUSDC | `0x69e1eE9F18e1Eb9452fDC461343b85F75bca9c4e` |
-| GameEngine (v8) | `0x3c3c1a83FEC3b6c1fc08632CDa3bBcBD817ed854` |
-| Treasury (v8) | `0x08a0E98795674818afC9e62E7865B067ed10d01F` |
-| SeasonNFT | `0xDD17D19B367996c0E3628f3B819B0235C21DB6AF` |
+| MockUSDC | `0xb64591F38292dA40375FC9f3BAf231f26e2c3903` |
+| GameEngine (v9) | `0x6183da6FE7EF10fD27Cba40992959c38DB49e90f` |
+| Treasury (v9) | `0x1ddf6CA5653042593089cD75A705851669BF07C5` |
+| SeasonNFT | `0x9b6Fcf35e4728D78107F9D9295d40629CE3c9Ce4` |
 
 ### Deployer Account
 - **Address:** `0x777715E32Bad440FfAc2E6ab67dF4F2E817571d2`
@@ -41,7 +41,7 @@
 
 ## 3. Development Environment
 
-- **Working directory:** `C:\claude\main\.claude\worktrees\stoic-rosalind`
+- **Working directory:** `C:\claude\main\.claude\worktrees\ecstatic-banach`
 - **Node.js NOT installed locally** — all builds happen via GitHub Actions CI
 - **Git credentials:** username=dmmitry9 (via `git credential fill`)
 - **Package manager:** npm (see `frontend/package-lock.json`)
@@ -50,7 +50,7 @@
 ### Build & Deploy Flow
 1. Edit code locally
 2. `git add <files> && git commit`
-3. `git push origin claude/stoic-rosalind`
+3. `git push origin claude/ecstatic-banach`
 4. GitHub Actions builds (`tsc && vite build`) and deploys to GitHub Pages
 5. Live at https://dmmitry9.github.io/dmm/
 
@@ -267,10 +267,10 @@ Most light theme issues are fixed. Some components may still use hardcoded `bg-g
 Set in `.github/workflows/deploy-frontend.yml`:
 ```
 VITE_WC_PROJECT_ID=demo
-VITE_GAME_ENGINE=0x3c3c1a83FEC3b6c1fc08632CDa3bBcBD817ed854
-VITE_TREASURY=0x08a0E98795674818afC9e62E7865B067ed10d01F
-VITE_SEASON_NFT=0xDD17D19B367996c0E3628f3B819B0235C21DB6AF
-VITE_USDC=0x69e1eE9F18e1Eb9452fDC461343b85F75bca9c4e
+VITE_GAME_ENGINE=0x6183da6FE7EF10fD27Cba40992959c38DB49e90f
+VITE_TREASURY=0x1ddf6CA5653042593089cD75A705851669BF07C5
+VITE_SEASON_NFT=0x9b6Fcf35e4728D78107F9D9295d40629CE3c9Ce4
+VITE_USDC=0xb64591F38292dA40375FC9f3BAf231f26e2c3903
 ```
 
 ---
@@ -280,14 +280,14 @@ VITE_USDC=0x69e1eE9F18e1Eb9452fDC461343b85F75bca9c4e
 **Option A (recommended):** Send this file to the new session with the message:
 ```
 Here is the context file for my PEPE vs SHIB project.
-Working directory: C:\claude\main\.claude\worktrees\stoic-rosalind
-Branch: claude/stoic-rosalind
+Working directory: C:\claude\main\.claude\worktrees\ecstatic-banach
+Branch: claude/ecstatic-banach
 [paste your new task here]
 ```
 
 **Option B:** If you need the AI to inspect the codebase first:
 ```
-Read SESSION_HANDOFF.md at C:\claude\main\.claude\worktrees\stoic-rosalind\SESSION_HANDOFF.md
+Read SESSION_HANDOFF.md at C:\claude\main\.claude\worktrees\ecstatic-banach\SESSION_HANDOFF.md
 and then [your task]
 ```
 
