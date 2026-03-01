@@ -3,9 +3,9 @@ import { type Address } from "viem";
 // ── Contract addresses (Base Sepolia — update after deployment) ──
 export const ADDRESSES = {
   gameEngine: (import.meta.env.VITE_GAME_ENGINE ||
-    "0xB32Ad5b3826a82cE3319bA38e1cBdbf1C1628c6D") as Address,
+    "0x1DAD39c655a29ACda59E040b4AEb67d40250d866") as Address,
   treasury: (import.meta.env.VITE_TREASURY ||
-    "0x11e49674CE039A9fb15210e5258e0F062eF029E2") as Address,
+    "0x6dF8772A2168e4a3058763c8A8C1C9A215953F5E") as Address,
   seasonNFT: (import.meta.env.VITE_SEASON_NFT ||
     "0x9b6Fcf35e4728D78107F9D9295d40629CE3c9Ce4") as Address,
   usdc: (import.meta.env.VITE_USDC ||

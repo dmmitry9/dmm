@@ -7,9 +7,9 @@ dataSources:
     name: GameEngine
     network: base-sepolia
     source:
-      address: "0xB32Ad5b3826a82cE3319bA38e1cBdbf1C1628c6D"
+      address: "0x1DAD39c655a29ACda59E040b4AEb67d40250d866"
       abi: GameEngine
-      startBlock: 38273758
+      startBlock: 38293878
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -53,9 +53,9 @@ dataSources:
     name: Treasury
     network: base-sepolia
     source:
-      address: "0x11e49674CE039A9fb15210e5258e0F062eF029E2"
+      address: "0x6dF8772A2168e4a3058763c8A8C1C9A215953F5E"
       abi: Treasury
-      startBlock: 38273758
+      startBlock: 38293878
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -93,7 +93,7 @@ dataSources:
     source:
       address: "0x9b6Fcf35e4728D78107F9D9295d40629CE3c9Ce4"
       abi: SeasonNFT
-      startBlock: 38273758
+      startBlock: 38293878
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7

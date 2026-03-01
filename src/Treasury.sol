@@ -396,7 +396,7 @@ contract Treasury is ITreasury, Ownable, ReentrancyGuard {
         uint8 winnerFaction,
         uint256[3] calldata laneHoldScores
     ) external override onlyGameEngine {
-        require(!seasonResults[seasonId].finalized, "Already finalized");
+        if (seasonResults[seasonId].finalized) return;
 
         // Transfer remaining killPots to season treasury
         for (uint8 lane = 0; lane < 3;) {

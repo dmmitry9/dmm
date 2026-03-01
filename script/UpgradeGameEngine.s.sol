@@ -20,7 +20,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract UpgradeGameEngineScript is Script {
     // Current deployed addresses (Base Sepolia)
     address constant USDC       = 0xb64591F38292dA40375FC9f3BAf231f26e2c3903;
-    address constant TREASURY   = 0x11e49674CE039A9fb15210e5258e0F062eF029E2;
+    address constant TREASURY   = 0x6dF8772A2168e4a3058763c8A8C1C9A215953F5E;
     address constant SEASON_NFT = 0x9b6Fcf35e4728D78107F9D9295d40629CE3c9Ce4;
 
     function run() external {
