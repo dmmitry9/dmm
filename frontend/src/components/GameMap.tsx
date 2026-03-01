@@ -361,20 +361,29 @@ export default function GameMap({
             )}
           </span>
 
-          {/* Special event badge */}
-          {specialEvent > 0 && (
-            <span className="px-2 py-0.5 rounded" style={{ backgroundColor: "var(--panel-bg)", color: "var(--accent-purple)" }}>
+          {/* Special event badge + roll button */}
+          {specialEvent > 0 ? (
+            <span className="px-2 py-0.5 rounded inline-flex items-center gap-1.5" style={{ backgroundColor: "var(--panel-bg)", color: "var(--accent-purple)" }}>
               {EVENT_EMOJI[specialEvent]} {EVENT_LABELS[specialEvent]}
-              <span className="ml-1" style={{ color: "var(--text-muted)" }}>
+              <span style={{ color: "var(--text-muted)" }}>
                 ({formatTimeRemaining(specialEventEndsAt)})
               </span>
+              {onRollSpecialEvent && (
+                <button
+                  onClick={onRollSpecialEvent}
+                  disabled={!eventCooldownReady || isRollingEvent}
+                  className="px-1.5 py-0 rounded text-[10px] font-semibold transition-colors ml-0.5"
+                  style={{
+                    backgroundColor: eventCooldownReady && !isRollingEvent ? "var(--accent-purple)" : "var(--btn-disabled-bg)",
+                    color: eventCooldownReady && !isRollingEvent ? "#fff" : "var(--text-muted)",
+                    cursor: eventCooldownReady && !isRollingEvent ? "pointer" : "not-allowed",
+                  }}
+                >
+                  {isRollingEvent ? "..." : "🎲"}
+                </button>
+              )}
             </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2 text-xs">
-          {/* Roll Event button */}
-          {onRollSpecialEvent && (
+          ) : onRollSpecialEvent ? (
             <button
               onClick={onRollSpecialEvent}
               disabled={!eventCooldownReady || isRollingEvent}
@@ -387,8 +396,10 @@ export default function GameMap({
             >
               {isRollingEvent ? "⏳..." : "🎲 Event"}
             </button>
-          )}
+          ) : null}
+        </div>
 
+        <div className="flex items-center gap-2 text-xs">
           {/* Refresh button */}
           {onRefreshScores && (
             <button

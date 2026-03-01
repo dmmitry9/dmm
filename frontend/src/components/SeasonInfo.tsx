@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { ADDRESSES, ERC20_ABI, TREASURY_ABI } from "../config/contracts";
-import { playConfirm } from "../lib/sounds";
+
 import type { TreasuryBreakdown } from "../hooks/useGameState";
 import {
   SEASON_DURATION,
@@ -83,7 +83,6 @@ export default function SeasonInfo({
     setDonateAmount("");
     setShowDonate(false);
     onDonated?.();
-    playConfirm();
   }
 
   const handleApproveDonate = () => {
@@ -164,7 +163,7 @@ export default function SeasonInfo({
               <button
                 onClick={() => setShowDonate(true)}
                 className="w-full text-xs py-1 rounded transition-all hover:opacity-80"
-                style={{ color: "var(--accent-yellow)", backgroundColor: "var(--accent-yellow-bold)", opacity: 0.7 }}
+                style={{ color: "#1a1a2e", backgroundColor: "var(--accent-yellow-bold)", opacity: 0.7 }}
               >
                 + Donate to Pool
               </button>
