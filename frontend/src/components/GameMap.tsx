@@ -333,13 +333,31 @@ export default function GameMap({
     <div className={`card space-y-6 ${weatherClass}`}>
       {/* Header: Weather + Controls */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="text-lg font-bold">⚔️ Battlefield</h2>
         <div className="flex items-center gap-2 text-xs flex-wrap">
-          {/* Weather badge */}
-          <span className="px-2 py-0.5 rounded" style={{ backgroundColor: "var(--panel-bg)" }}>
+          <h2 className="text-lg font-bold mr-1">⚔️ Battlefield</h2>
+
+          {/* Weather badge + roll button + timer */}
+          <span className="px-2 py-0.5 rounded inline-flex items-center gap-1.5" style={{ backgroundColor: "var(--panel-bg)" }}>
             {WEATHER_EMOJI[weather]} {WEATHER_LABELS[weather]}
             {weather > 0 && (
-              <span className="ml-1" style={{ color: "var(--accent-yellow)" }}>({WEATHER_BONUS_UNIT[weather]})</span>
+              <span style={{ color: "var(--accent-yellow)" }}>({WEATHER_BONUS_UNIT[weather]})</span>
+            )}
+            {weatherRemaining > 0 && (
+              <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>⏳{formatTime(weatherRemaining)}</span>
+            )}
+            {onRollWeather && (
+              <button
+                onClick={onRollWeather}
+                disabled={!weatherCooldownReady || isRollingWeather}
+                className="px-1.5 py-0 rounded text-[10px] font-semibold transition-colors ml-0.5"
+                style={{
+                  backgroundColor: weatherCooldownReady && !isRollingWeather ? "var(--accent-blue)" : "var(--btn-disabled-bg)",
+                  color: weatherCooldownReady && !isRollingWeather ? "#fff" : "var(--text-muted)",
+                  cursor: weatherCooldownReady && !isRollingWeather ? "pointer" : "not-allowed",
+                }}
+              >
+                {isRollingWeather ? "..." : "🎲"}
+              </button>
             )}
           </span>
 
@@ -352,23 +370,9 @@ export default function GameMap({
               </span>
             </span>
           )}
+        </div>
 
-          {/* Roll Weather button (with cooldown timer) */}
-          {onRollWeather && (
-            <button
-              onClick={onRollWeather}
-              disabled={!weatherCooldownReady || isRollingWeather}
-              className="px-2 py-0.5 rounded text-[10px] font-semibold transition-colors"
-              style={{
-                backgroundColor: weatherCooldownReady && !isRollingWeather ? "var(--accent-blue)" : "var(--btn-disabled-bg)",
-                color: weatherCooldownReady && !isRollingWeather ? "#fff" : "var(--text-muted)",
-                cursor: weatherCooldownReady && !isRollingWeather ? "pointer" : "not-allowed",
-              }}
-            >
-              {isRollingWeather ? "⏳..." : weatherRemaining > 0 ? `⏳ ${formatTime(weatherRemaining)}` : "🎲 Weather"}
-            </button>
-          )}
-
+        <div className="flex items-center gap-2 text-xs">
           {/* Roll Event button */}
           {onRollSpecialEvent && (
             <button
