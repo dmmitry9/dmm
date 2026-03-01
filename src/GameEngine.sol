@@ -308,6 +308,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         require(unitType != UnitType.NONE, "Invalid unit type");
         require(faction == Faction.PEPE || faction == Faction.SHIB, "Invalid faction");
 
+        _updateHoldScore(laneId);
         _processArrivals(laneId);
 
         // Lock player to faction for this season (reset each season)
@@ -364,6 +365,7 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
     /// @param laneId Lane to resolve (0–2). Requires both factions present.
     function resolveBattle(uint8 laneId) external nonReentrant onlySeason {
         require(laneId < NUM_LANES, "Invalid lane");
+        _updateHoldScore(laneId);
         _processArrivals(laneId);
         require(_hasBothFactions(laneId), "No battle needed");
         _resolveBattle(laneId);
