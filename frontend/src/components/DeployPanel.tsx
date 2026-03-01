@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { ADDRESSES, GAME_ENGINE_ABI, ERC20_ABI } from "../config/contracts";
 import { useUnitPrice, usePlayerFaction } from "../hooks/useGameState";
-import { playDeploy } from "../lib/sounds";
 import {
   FACTION,
   UNIT_TYPE,
@@ -65,7 +64,6 @@ export default function DeployPanel({
   if (isSuccess) {
     onDeployed();
     refetchAllowance();
-    playDeploy();
   }
 
   const handleApprove = () => {
