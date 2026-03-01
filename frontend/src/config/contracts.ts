@@ -397,4 +397,27 @@ export const TREASURY_ABI = [
     ],
     outputs: [],
   },
+  {
+    name: "seasonResults",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "seasonId", type: "uint256" }],
+    outputs: [
+      { name: "finalized", type: "bool" },
+      { name: "winnerFaction", type: "uint8" },
+      { name: "totalHoldScore", type: "uint256" },
+      { name: "treasuryBalance", type: "uint256" },
+      { name: "totalClaimed", type: "uint256" },
+    ],
+  },
+  {
+    name: "hasClaimed",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "seasonId", type: "uint256" },
+      { name: "player", type: "address" },
+    ],
+    outputs: [{ type: "bool" }],
+  },
 ] as const;

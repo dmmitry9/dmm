@@ -22,6 +22,7 @@ import {
   usePendingRewards,
   usePlayerHoldScore,
   usePlayerLaneScores,
+  useClaimableReward,
 } from "./hooks/useGameState";
 
 function useTheme() {
@@ -65,6 +66,7 @@ export default function App() {
   const usdcBalance = useUSDCBalance(address);
   const treasuryBreakdown = useTreasuryBreakdown(gameState.seasonId);
   const pendingRewards = usePendingRewards(address);
+  const claimInfo = useClaimableReward(gameState.seasonId, gameState.seasonActive, address);
   const playerHoldScore = usePlayerHoldScore(gameState.seasonId, address);
   const playerLaneScores = usePlayerLaneScores(gameState.seasonId, address);
 
@@ -369,6 +371,7 @@ export default function App() {
             <RewardsPanel
               pendingRewards={pendingRewards}
               seasonId={gameState.seasonId}
+              claimInfo={claimInfo}
             />
           </details>
         </div>

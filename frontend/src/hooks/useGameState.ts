@@ -147,6 +147,79 @@ export function usePendingRewards(address: `0x${string}` | undefined) {
   return data as bigint | undefined;
 }
 
+// ── Claimable season reward ──
+export function useClaimableReward(
+  seasonId: bigint | undefined,
+  seasonActive: boolean | undefined,
+  address: `0x${string}` | undefined
+) {
+  // Determine which season to claim:
+  // season ended (active=false) → claim current seasonId
+  // season active (active=true) → claim previous seasonId
+  const claimSeasonId =
+    seasonId !== undefined && seasonId > 0n
+      ? seasonActive
+        ? seasonId - 1n
+        : seasonId
+      : undefined;
+
+  const enabled = !!claimSeasonId && claimSeasonId > 0n && !!address;
+
+  const { data, refetch } = useReadContracts({
+    contracts: [
+      {
+        address: ADDRESSES.treasury,
+        abi: TREASURY_ABI,
+        functionName: "seasonResults",
+        args: enabled ? [claimSeasonId!] : undefined,
+      },
+      {
+        address: ADDRESSES.gameEngine,
+        abi: GAME_ENGINE_ABI,
+        functionName: "getPlayerHoldScore",
+        args: enabled ? [claimSeasonId!, address!] : undefined,
+      },
+      {
+        address: ADDRESSES.treasury,
+        abi: TREASURY_ABI,
+        functionName: "hasClaimed",
+        args: enabled ? [claimSeasonId!, address!] : undefined,
+      },
+    ],
+    query: { enabled, refetchInterval: 15_000 },
+  });
+
+  const seasonResult = data?.[0]?.result as
+    | [boolean, number, bigint, bigint, bigint]
+    | undefined;
+  const playerHoldScore = data?.[1]?.result as bigint | undefined;
+  const alreadyClaimed = (data?.[2]?.result as boolean) ?? false;
+
+  const finalized = seasonResult?.[0] ?? false;
+  const totalHoldScore = seasonResult?.[2] ?? 0n;
+  const treasuryBalance = seasonResult?.[3] ?? 0n;
+
+  // Compute claimable: treasuryBalance * playerHoldScore / totalHoldScore
+  let claimable = 0n;
+  if (
+    finalized &&
+    !alreadyClaimed &&
+    playerHoldScore &&
+    playerHoldScore > 0n &&
+    totalHoldScore > 0n
+  ) {
+    claimable = (treasuryBalance * playerHoldScore) / totalHoldScore;
+  }
+
+  return {
+    claimSeasonId: claimSeasonId ?? 0n,
+    claimable,
+    alreadyClaimed,
+    seasonFinalized: finalized,
+    refetch,
+  };
+}
+
 // ── Unit price preview ──
 export function useUnitPrice(
   faction: number,
