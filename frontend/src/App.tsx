@@ -9,6 +9,7 @@ import RewardsPanel from "./components/RewardsPanel";
 import RulesPage from "./components/RulesPage";
 import BattleLog from "./components/BattleLog";
 import BattleToast from "./components/BattleToast";
+import Leaderboard from "./components/Leaderboard";
 import { FACTION, WEATHER_INTERVAL } from "./lib/constants";
 import { isMuted, toggleMute, playBattle, playWeatherChange, playSeasonEvent } from "./lib/sounds";
 import {
@@ -312,6 +313,8 @@ export default function App() {
           </div>
 
           <BattleLog history={history} />
+
+          <Leaderboard seasonId={gameState.seasonId} currentPlayer={address} />
 
           {/* Spectator notice */}
           {!address && (
