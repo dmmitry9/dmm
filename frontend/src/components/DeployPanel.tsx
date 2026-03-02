@@ -28,14 +28,16 @@ export default function DeployPanel({
   const playerFaction = usePlayerFaction(address);
 
   const [faction, setFaction] = useState<number>(FACTION.PEPE);
-  const [unitType, setUnitType] = useState<number>(UNIT_TYPE.SWORDSMAN);
   const [laneId, setLaneId] = useState<number>(0);
-  const [count, setCount] = useState<number>(10);
+  const [swordsmanCount, setSwordsmanCount] = useState<number>(0);
+  const [spearmanCount, setSpearmanCount] = useState<number>(0);
+  const [cavalryCount, setCavalryCount] = useState<number>(0);
 
   // Lock faction if player already has one
   const activeFaction = playerFaction > 0 ? playerFaction : faction;
 
-  const price = useUnitPrice(activeFaction, count, totalPEPE, totalSHIB);
+  const totalCount = swordsmanCount + spearmanCount + cavalryCount;
+  const price = useUnitPrice(activeFaction, totalCount, totalPEPE, totalSHIB);
 
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: ADDRESSES.usdc,
@@ -80,8 +82,8 @@ export default function DeployPanel({
     deploy({
       address: ADDRESSES.gameEngine,
       abi: GAME_ENGINE_ABI,
-      functionName: "deployUnits",
-      args: [laneId, unitType, activeFaction, count],
+      functionName: "deployMixedUnits",
+      args: [laneId, activeFaction, swordsmanCount, spearmanCount, cavalryCount],
     });
   };
 
@@ -137,26 +139,37 @@ export default function DeployPanel({
         )}
       </div>
 
-      {/* Unit Type */}
+      {/* Unit Composition */}
       <div>
         <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>
-          Unit Type <span style={{ color: "var(--text-muted)" }}>({RPS_CHART})</span>
+          Unit Composition <span style={{ color: "var(--text-muted)" }}>({RPS_CHART})</span>
         </label>
-        <div className="grid grid-cols-3 gap-2">
-          {[UNIT_TYPE.SWORDSMAN, UNIT_TYPE.SPEARMAN, UNIT_TYPE.CAVALRY].map(
-            (ut) => (
-              <button
-                key={ut}
-                onClick={() => setUnitType(ut)}
-                className={`py-2 rounded-lg text-sm transition-all
-                ${unitType === ut ? "text-white" : ""}`}
-                style={unitType === ut ? { backgroundColor: "var(--accent-purple)" } : { backgroundColor: "var(--btn-inactive-bg)", color: "var(--btn-inactive-text)" }}
-              >
-                {UNIT_EMOJI[ut]} {UNIT_LABELS[ut]}
-              </button>
-            )
-          )}
+        <div className="space-y-2">
+          {([
+            { type: UNIT_TYPE.SWORDSMAN, value: swordsmanCount, setter: setSwordsmanCount },
+            { type: UNIT_TYPE.SPEARMAN, value: spearmanCount, setter: setSpearmanCount },
+            { type: UNIT_TYPE.CAVALRY, value: cavalryCount, setter: setCavalryCount },
+          ] as const).map(({ type, value, setter }) => (
+            <div key={type} className="flex items-center gap-2">
+              <span className="w-28 text-sm" style={{ color: "var(--text-secondary)" }}>
+                {UNIT_EMOJI[type]} {UNIT_LABELS[type]}
+              </span>
+              <input
+                type="number"
+                value={value}
+                onChange={(e) => setter(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+                min={0}
+                className="flex-1 border border-game-border rounded-lg px-3 py-1.5 text-sm font-mono"
+                style={{ backgroundColor: "var(--input-bg)", color: "var(--text-primary)" }}
+              />
+            </div>
+          ))}
         </div>
+        {totalCount > 0 && (
+          <p className="text-xs mt-1 text-right" style={{ color: "var(--text-muted)" }}>
+            Total: {totalCount} units
+          </p>
+        )}
       </div>
 
       {/* Lane */}
@@ -177,19 +190,6 @@ export default function DeployPanel({
         </div>
       </div>
 
-      {/* Count */}
-      <div>
-        <label className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Count</label>
-        <input
-          type="number"
-          value={count}
-          onChange={(e) => setCount(Math.max(1, Number(e.target.value)))}
-          min={1}
-          className="w-full border border-game-border rounded-lg px-3 py-2 text-sm font-mono"
-          style={{ backgroundColor: "var(--input-bg)", color: "var(--text-primary)" }}
-        />
-      </div>
-
       {/* Price preview */}
       <div className="p-3 rounded-lg flex justify-between items-center" style={{ backgroundColor: "var(--panel-bg)" }}>
         <span className="text-sm" style={{ color: "var(--text-secondary)" }}>Estimated Cost</span>
@@ -202,7 +202,7 @@ export default function DeployPanel({
       {hasEnoughAllowance ? (
         <button
           onClick={handleDeploy}
-          disabled={!price || isDeploying}
+          disabled={!price || isDeploying || totalCount === 0}
           className={`w-full py-3 rounded-lg font-bold ${activeFaction === FACTION.PEPE ? "btn-pepe" : "btn-shib"}`}
         >
           {isDeploying ? "Deploying..." : "Deploy ⚔️"}
@@ -218,7 +218,7 @@ export default function DeployPanel({
           </button>
           <button
             onClick={handleDeploy}
-            disabled={!price || isDeploying || !hasEnoughAllowance}
+            disabled={!price || isDeploying || !hasEnoughAllowance || totalCount === 0}
             className={`flex-1 opacity-50 ${activeFaction === FACTION.PEPE ? "btn-pepe" : "btn-shib"}`}
           >
             2. Deploy ⚔️

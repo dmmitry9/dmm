@@ -3,9 +3,9 @@ import { type Address } from "viem";
 // ── Contract addresses (Base Sepolia — update after deployment) ──
 export const ADDRESSES = {
   gameEngine: (import.meta.env.VITE_GAME_ENGINE ||
-    "0x92848Ae18eE729f1473691843D48d33112d3015c") as Address,
+    "0x94156240d33e7A62F87cFEb01Db5EBF46256e206") as Address,
   treasury: (import.meta.env.VITE_TREASURY ||
-    "0xbE99aEfF7fdE418A0e65F7e30Ff08DAD43907698") as Address,
+    "0x594ce67056D616982ebB66412e851d60534A75b7") as Address,
   seasonNFT: (import.meta.env.VITE_SEASON_NFT ||
     "0x9b6Fcf35e4728D78107F9D9295d40629CE3c9Ce4") as Address,
   usdc: (import.meta.env.VITE_USDC ||
@@ -186,6 +186,19 @@ export const GAME_ENGINE_ABI = [
       { name: "unitType", type: "uint8" },
       { name: "faction", type: "uint8" },
       { name: "count", type: "uint32" },
+    ],
+    outputs: [],
+  },
+  {
+    name: "deployMixedUnits",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "laneId", type: "uint8" },
+      { name: "faction", type: "uint8" },
+      { name: "swordsmanCount", type: "uint32" },
+      { name: "spearmanCount", type: "uint32" },
+      { name: "cavalryCount", type: "uint32" },
     ],
     outputs: [],
   },

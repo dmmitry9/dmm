@@ -361,6 +361,88 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
         emit UnitsDeployed(squadId, msg.sender, faction, laneId, unitType, count, cost);
     }
 
+    /// @notice Deploy a mixed squad of up to 3 unit types in a single transaction.
+    /// Creates 1–3 separate squads (one per non-zero count), but batches pricing,
+    /// USDC transfer, and treasury recording into one atomic operation.
+    /// @param laneId Target lane (0–2).
+    /// @param faction Faction to deploy for (PEPE or SHIB). Locked per player per season.
+    /// @param swordsmanCount Number of Swordsman units.
+    /// @param spearmanCount Number of Spearman units.
+    /// @param cavalryCount Number of Cavalry units.
+    function deployMixedUnits(
+        uint8 laneId,
+        Faction faction,
+        uint32 swordsmanCount,
+        uint32 spearmanCount,
+        uint32 cavalryCount
+    ) external nonReentrant onlySeason {
+        uint32 totalCount = swordsmanCount + spearmanCount + cavalryCount;
+        require(totalCount > 0, "Zero units");
+        require(laneId < NUM_LANES, "Invalid lane");
+        require(faction == Faction.PEPE || faction == Faction.SHIB, "Invalid faction");
+
+        _updateHoldScore(laneId);
+        _processArrivals(laneId);
+
+        // Lock player to faction for this season (reset each season)
+        if (playerFactionSeason[msg.sender] != currentSeasonId) {
+            playerFaction[msg.sender] = faction;
+            playerFactionSeason[msg.sender] = currentSeasonId;
+        } else {
+            require(playerFaction[msg.sender] == faction, "Faction locked");
+        }
+
+        // Update total units BEFORE price computation (prevents batch underpricing)
+        if (faction == Faction.PEPE) {
+            totalUnitsPEPE += totalCount;
+        } else {
+            totalUnitsSHIB += totalCount;
+        }
+
+        // Compute price for ALL units at once (same faction → same price per unit)
+        uint256 cost = treasury.getUnitPrice(
+            uint8(faction), totalCount, totalUnitsPEPE, totalUnitsSHIB
+        );
+
+        // Single USDC transfer: player → treasury
+        require(usdc.transferFrom(msg.sender, address(treasury), cost), "USDC transfer failed");
+
+        // Single treasury recording (splits into killPot, treasury, etc.)
+        treasury.recordDeployment(msg.sender, cost, uint8(faction), laneId, currentSeasonId);
+
+        // Update player stats once
+        playerStats[currentSeasonId][msg.sender].usdcSpent += uint128(cost);
+
+        // Create individual squads for each non-zero unit type
+        uint32[3] memory counts = [swordsmanCount, spearmanCount, cavalryCount];
+        UnitType[3] memory types = [UnitType.SWORDSMAN, UnitType.SPEARMAN, UnitType.CAVALRY];
+
+        for (uint8 i = 0; i < 3;) {
+            if (counts[i] > 0) {
+                uint256 squadCost = (cost * counts[i]) / totalCount;
+                uint256 squadId = nextSquadId++;
+                squads[squadId] = Squad({
+                    owner: msg.sender,
+                    laneId: laneId,
+                    unitType: types[i],
+                    faction: faction,
+                    active: true,
+                    deployedAt: uint40(block.timestamp),
+                    bastionEnteredAt: 0,
+                    initialCount: counts[i],
+                    originalCount: counts[i],
+                    costPaid: uint96(squadCost),
+                    seasonId: uint32(currentSeasonId)
+                });
+
+                marchingSquads[laneId].push(squadId);
+
+                emit UnitsDeployed(squadId, msg.sender, faction, laneId, types[i], counts[i], squadCost);
+            }
+            unchecked { ++i; }
+        }
+    }
+
     /// @notice Public trigger for battle resolution. Permissionless.
     /// @param laneId Lane to resolve (0–2). Requires both factions present.
     function resolveBattle(uint8 laneId) external nonReentrant onlySeason {
