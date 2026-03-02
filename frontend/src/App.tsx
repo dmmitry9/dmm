@@ -10,6 +10,7 @@ import RulesPage from "./components/RulesPage";
 import BattleLog from "./components/BattleLog";
 import BattleToast from "./components/BattleToast";
 import Leaderboard from "./components/Leaderboard";
+import GamePageV2 from "./components/v2/GamePageV2";
 import { FACTION, WEATHER_INTERVAL } from "./lib/constants";
 import {
   useGameState,
@@ -39,9 +40,13 @@ function useTheme() {
 export default function App() {
   const { theme, toggle: toggleTheme } = useTheme();
   const [showRules, setShowRules] = useState(window.location.hash === "#rules");
+  const [showV2, setShowV2] = useState(window.location.hash === "#v2");
 
   useEffect(() => {
-    const onHash = () => setShowRules(window.location.hash === "#rules");
+    const onHash = () => {
+      setShowRules(window.location.hash === "#rules");
+      setShowV2(window.location.hash === "#v2");
+    };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
@@ -214,6 +219,38 @@ export default function App() {
   const seasonExpired = gameState.seasonActive && gameState.seasonStartTime
     ? now >= Number(gameState.seasonStartTime) + 20160
     : false;
+
+  if (showV2) {
+    return (
+      <GamePageV2
+        theme={theme}
+        toggleTheme={toggleTheme}
+        address={address}
+        seasonId={gameState.seasonId}
+        seasonActive={gameState.seasonActive}
+        seasonStartTime={gameState.seasonStartTime}
+        totalPEPE={gameState.totalPEPE ?? 0n}
+        totalSHIB={gameState.totalSHIB ?? 0n}
+        weather={gameState.weather}
+        specialEvent={gameState.specialEvent}
+        specialEventEndsAt={gameState.specialEventEndsAt}
+        weatherSetAt={gameState.weatherSetAt}
+        effectivePEPE={effectivePEPE}
+        effectiveSHIB={effectiveSHIB}
+        laneData={laneData}
+        lanes={lanes}
+        laneSquads={laneSquads}
+        history={history}
+        usdcBalance={usdcBalance}
+        treasuryBreakdown={treasuryBreakdown}
+        pendingRewards={pendingRewards}
+        claimInfo={claimInfo}
+        playerHoldScore={playerHoldScore}
+        playerLaneScores={playerLaneScores}
+        refetch={() => gameState.refetch()}
+      />
+    );
+  }
 
   if (showRules) {
     return (
@@ -389,6 +426,10 @@ export default function App() {
       {/* Footer */}
       <footer className="border-t border-game-border px-6 py-4 text-center text-xs" style={{ color: "var(--text-muted)" }}>
         PEPE vs SHIB Battle Arena — Built on Base L2 — USDC Economy
+        {" · "}
+        <a href="#v2" className="text-pepe hover:text-pepe/80 font-semibold transition-colors">
+          Try V2 Pixel Art UI →
+        </a>
       </footer>
 
       {/* Battle result toast */}
