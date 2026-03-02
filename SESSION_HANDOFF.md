@@ -1,6 +1,6 @@
 # PEPE vs SHIB — Session Handoff Document
 
-> **Last updated:** 2026-03-01
+> **Last updated:** 2026-03-02
 > **Branch:** `claude/ecstatic-banach`
 > **Site:** https://dmmitry9.github.io/dmm/
 > **Repo:** https://github.com/dmmitry9/dmm.git
@@ -26,8 +26,8 @@
 | Contract | Address |
 |----------|---------|
 | MockUSDC | `0xb64591F38292dA40375FC9f3BAf231f26e2c3903` |
-| GameEngine (v9.1) | `0xd963febaFe88030E803B1b37eC5031350fa2d921` |
-| Treasury (v9.1) | `0x660508f7C38403b10E0F17f95Cd185368493C259` |
+| GameEngine (v9.2) | `0x92848Ae18eE729f1473691843D48d33112d3015c` |
+| Treasury (v9.2) | `0xbE99aEfF7fdE418A0e65F7e30Ff08DAD43907698` |
 | SeasonNFT | `0x9b6Fcf35e4728D78107F9D9295d40629CE3c9Ce4` |
 
 ### Deployer Account
@@ -267,8 +267,8 @@ Most light theme issues are fixed. Some components may still use hardcoded `bg-g
 Set in `.github/workflows/deploy-frontend.yml`:
 ```
 VITE_WC_PROJECT_ID=demo
-VITE_GAME_ENGINE=0xd963febaFe88030E803B1b37eC5031350fa2d921
-VITE_TREASURY=0x660508f7C38403b10E0F17f95Cd185368493C259
+VITE_GAME_ENGINE=0x92848Ae18eE729f1473691843D48d33112d3015c
+VITE_TREASURY=0xbE99aEfF7fdE418A0e65F7e30Ff08DAD43907698
 VITE_SEASON_NFT=0x9b6Fcf35e4728D78107F9D9295d40629CE3c9Ce4
 VITE_USDC=0xb64591F38292dA40375FC9f3BAf231f26e2c3903
 ```

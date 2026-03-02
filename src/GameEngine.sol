@@ -900,7 +900,12 @@ contract GameEngine is IGameEngine, Ownable, ReentrancyGuard {
 
         uint256 elapsed = block.timestamp - b.lastHoldScoreUpdate;
         uint256 minutesDelta = elapsed / 1 minutes;
-        if (minutesDelta == 0) return;
+        if (minutesDelta == 0) {
+            // Advance timer even with 0 credit to prevent retroactive hold score
+            // for squads that arrive via _processArrivals after this call.
+            b.lastHoldScoreUpdate = uint40(block.timestamp);
+            return;
+        }
 
         // Single pass: count units, distribute player scores, and clean zombies
         uint256[] storage ids = bastionSquads[laneId];
