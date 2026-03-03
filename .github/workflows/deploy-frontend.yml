@@ -1,0 +1,53 @@
+name: Deploy Frontend to GitHub Pages
+
+on:
+  push:
+    branches: [claude/stoic-rosalind, claude/ecstatic-banach, master]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_WC_PROJECT_ID: demo
+          VITE_GAME_ENGINE: "0x94156240d33e7A62F87cFEb01Db5EBF46256e206"
+          VITE_TREASURY: "0x594ce67056D616982ebB66412e851d60534A75b7"
+          VITE_SEASON_NFT: "0x9b6Fcf35e4728D78107F9D9295d40629CE3c9Ce4"
+          VITE_USDC: "0xb64591F38292dA40375FC9f3BAf231f26e2c3903"
+          VITE_SUBGRAPH_URL: "https://api.studio.thegraph.com/query/1742958/pepe-vs-shib/v0.2.0"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

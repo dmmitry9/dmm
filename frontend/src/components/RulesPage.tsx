@@ -1,0 +1,248 @@
+export default function RulesPage({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: "var(--game-bg)", color: "var(--text-primary)" }}>
+      <header className="border-b border-game-border px-6 py-4">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <h1 className="text-xl font-bold">
+            📜 <span className="text-pepe">PEPE</span> vs{" "}
+            <span className="text-shib">SHIB</span> — Full Rules
+          </h1>
+          <button
+            onClick={onBack}
+            className="text-sm hover:opacity-70 transition-opacity"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            ← Back to Game
+          </button>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-6 py-8 space-y-8 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+        {/* Overview */}
+        <Section title="🎮 Overview">
+          <p>
+            PEPE vs SHIB is an on-chain strategy game on Base L2.
+            Two factions compete for control of 3 battlefield lanes.
+            Recruit units with USDC, march them to the enemy bastion, win battles, and earn rewards.
+            Each season lasts <B>7 days</B>.
+          </p>
+        </Section>
+
+        {/* Factions & Recruitment */}
+        <Section title="🐸🐕 Factions & Recruitment">
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Pick <span className="text-pepe font-semibold">PEPE</span> or{" "}
+              <span className="text-shib font-semibold">SHIB</span> — you are locked to one faction per season.</li>
+            <li>Base unit cost: <B>$1 USDC</B>. Max: <B>$1.40 USDC</B>.</li>
+            <li>Price increases linearly when the dominant faction leads by <B>2,000–20,000 units</B>.</li>
+            <li>The underdog faction always pays the base price — join the weaker side for cheaper units.</li>
+          </ul>
+        </Section>
+
+        {/* Battlefield */}
+        <Section title="⚔️ Battlefield">
+          <ul className="list-disc pl-5 space-y-1">
+            <li><B>3 lanes</B>, each with <B>7 segments</B> (PEPE base → 3 segments → Bastion → 3 segments → SHIB base).</li>
+            <li>Units march from your base toward the enemy bastion 🏰 (segment 3).</li>
+            <li>March duration: <B>90 minutes</B> (30 min per segment).</li>
+            <li>When both factions reach the bastion, a battle is triggered.</li>
+          </ul>
+        </Section>
+
+        {/* Unit Types & RPS */}
+        <Section title="🗡️ Unit Types — Rock-Paper-Scissors">
+          <div className="flex items-center gap-2 text-lg mb-3 font-bold">
+            <span>⚔️ Swordsman</span>
+            <span style={{ color: "var(--text-muted)" }}>&gt;</span>
+            <span>🔱 Spearman</span>
+            <span style={{ color: "var(--text-muted)" }}>&gt;</span>
+            <span>🐎 Cavalry</span>
+            <span style={{ color: "var(--text-muted)" }}>&gt;</span>
+            <span>⚔️ Swordsman</span>
+          </div>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Winning matchup grants a <B>1.8× combat power</B> multiplier.</li>
+            <li>Choose your unit type strategically based on what the enemy has deployed.</li>
+          </ul>
+        </Section>
+
+        {/* Weather */}
+        <Section title="🌦️ Weather System">
+          <p className="mb-2">Weather changes every <B>6 hours</B> via on-chain VRF randomness:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>🌧️ <B>Rainy</B> — Spearmen get <B>+20%</B> combat bonus.</li>
+            <li>☀️ <B>Sunny</B> — Cavalry gets <B>+20%</B> combat bonus.</li>
+            <li>🌫️ <B>Foggy</B> — Swordsmen get <B>+20%</B> combat bonus.</li>
+          </ul>
+        </Section>
+
+        {/* Special Events */}
+        <Section title="🎲 Special Events">
+          <p className="mb-2">Random events last <B>2 hours</B>, with an <B>8-hour cooldown</B> between them:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>🦠 <B>Epidemic</B> — Attrition decay rate is <B>doubled</B> (units die faster).</li>
+            <li>🌾 <B>Harvest</B> — Attrition decay rate is <B>halved</B> (units last longer).</li>
+            <li>🌑 <B>Eclipse</B> — RPS advantage is <B>neutralized</B> (all units fight at equal multiplier).</li>
+          </ul>
+          <p className="mt-1" style={{ color: "var(--text-muted)" }}>25% chance for each event type, 25% chance for no event.</p>
+        </Section>
+
+        {/* Attrition */}
+        <Section title="💀 Attrition (Unit Decay)">
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Units take <B>no damage</B> during the 90-minute march.</li>
+            <li>Once in the bastion, units decay at <B>~4% per hour</B> (0.96^h formula).</li>
+            <li>After 7 days (full season), a unit is reduced to <B>0.1%</B> of its original strength.</li>
+            <li>When effective units hit 0, the squad is removed and <B>70% of its original cost</B> goes to the season treasury.</li>
+            <li>Epidemic doubles the effective hours; Harvest halves them.</li>
+          </ul>
+          <p className="mt-3 mb-1 font-semibold" style={{ color: "var(--text-primary)" }}>📊 Attrition Table</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs" style={{ borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--game-border)" }}>
+                  <Th>Initial</Th>
+                  <Th>6h</Th>
+                  <Th>12h</Th>
+                  <Th>18h</Th>
+                  <Th>24h</Th>
+                  <Th>Death</Th>
+                </tr>
+              </thead>
+              <tbody>
+                <AttritionRow initial={1} values={["0"]} death="~5h" />
+                <AttritionRow initial={2} values={["1", "0"]} death="~12h" />
+                <AttritionRow initial={5} values={["3", "2", "1", "0"]} death="~24h" />
+                <AttritionRow initial={10} values={["7", "4", "2", "1"]} death="~30h" />
+                <AttritionRow initial={50} values={["39", "23", "14", "8"]} death="~90h" />
+                <AttritionRow initial={100} values={["78", "47", "28", "17"]} death="~112h" />
+              </tbody>
+            </table>
+          </div>
+          <p className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>
+            Effective = floor(initial × 0.96^hours). Small squads die fast due to integer rounding.
+          </p>
+        </Section>
+
+        {/* Battle Resolution */}
+        <Section title="⚔️ Battle Resolution">
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Triggered when both factions are present in the same bastion.</li>
+            <li><B>Combat power</B> = effective units × RPS multiplier × weather bonus.</li>
+            <li>The faction with higher total combat power wins.</li>
+            <li>Tie-breaker: earliest arrival → lowest squad ID.</li>
+            <li>Winner&apos;s casualties: proportional to the power ratio. Loser is eliminated.</li>
+            <li><B>Winner</B> claims <B>100% of the loser&apos;s kill pot</B> for that lane.</li>
+            <li><B>Loser</B> earns a <B>partial share</B> of the winner&apos;s kill pot, based on casualties inflicted.</li>
+          </ul>
+        </Section>
+
+        {/* Treasury & Economy */}
+        <Section title="💰 Treasury & Economy">
+          <p className="mb-2">Every USDC spent on recruitment is split:</p>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <Stat label="Kill Pot (battle rewards)" value="70%" />
+            <Stat label="Current Season Pool" value="12%" />
+            <Stat label="Next Season Pool" value="10%" />
+            <Stat label="Season +2 Pool" value="5%" />
+            <Stat label="Protocol Fee" value="3%" />
+          </div>
+          <p className="text-xs mb-2" style={{ color: "var(--text-muted)" }}>
+            Protocol Fee covers marketing, development, and platform maintenance.
+          </p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>At season end, all remaining kill pots are swept into the season treasury.</li>
+            <li>Next-season seeding means new seasons always start with a prize pool.</li>
+          </ul>
+        </Section>
+
+        {/* Hold Score & Farming */}
+        <Section title="🏦 Bastion Holding & Farming">
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Units in the bastion accumulate <B>hold score</B> = units × minutes held.</li>
+            <li>Hold score determines your share of the <B>season treasury</B> at season end.</li>
+            <li>⚠️ <B>Contested bastions</B> (both factions present) do <B>NOT</B> accumulate hold score — clear the enemy first!</li>
+            <li>After the season ends, call <B>claim()</B> to receive your share proportional to hold score.</li>
+          </ul>
+        </Section>
+
+        {/* Season NFT */}
+        <Section title="🏆 Season NFT">
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Each season lasts <B>7 days</B>.</li>
+            <li>The winning faction is determined by total hold score across all 3 lanes.</li>
+            <li>Top 3 players from the winning faction receive a <B>Season Champion NFT</B> (on-chain SVG).</li>
+            <li>Ranks: 🥇 1st Place, 🥈 2nd Place, 🥉 3rd Place.</li>
+            <li>NFTs are collectibles with no financial rights.</li>
+          </ul>
+        </Section>
+
+        {/* Withdrawals */}
+        <Section title="💸 Claiming & Withdrawing">
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Kill pot rewards are added to your <B>pending balance</B> automatically after battles.</li>
+            <li>Season treasury share requires calling <B>claim(seasonId)</B> after the season ends.</li>
+            <li>Call <B>withdraw()</B> at any time to transfer all pending USDC to your wallet.</li>
+          </ul>
+        </Section>
+
+        <div className="text-center pt-4 border-t border-game-border">
+          <button
+            onClick={onBack}
+            className="text-pepe hover:text-pepe/80 transition-colors font-semibold"
+          >
+            ← Back to Game
+          </button>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="card space-y-2">
+      <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function B({ children }: { children: React.ReactNode }) {
+  return <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{children}</span>;
+}
+
+function Th({ children }: { children: React.ReactNode }) {
+  return (
+    <th className="px-2 py-1.5 text-left font-semibold" style={{ color: "var(--text-muted)" }}>
+      {children}
+    </th>
+  );
+}
+
+function AttritionRow({ initial, values, death }: { initial: number; values: string[]; death: string }) {
+  const padded = [...values, ...Array(4 - values.length).fill("—")];
+  const isDead = initial <= 2;
+  return (
+    <tr style={{ borderBottom: "1px solid var(--game-border)" }}>
+      <td className="px-2 py-1.5 font-bold" style={{ color: "var(--text-primary)" }}>{initial}</td>
+      {padded.map((v, i) => (
+        <td key={i} className="px-2 py-1.5" style={{ color: v === "0" ? "var(--accent-red, #ef4444)" : v === "—" ? "var(--text-muted)" : "var(--text-secondary)" }}>
+          {v === "0" ? "💀 0" : v}
+        </td>
+      ))}
+      <td className="px-2 py-1.5 font-semibold" style={{ color: isDead ? "var(--accent-red, #ef4444)" : "var(--accent-yellow)" }}>
+        {death}
+      </td>
+    </tr>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded px-3 py-1.5 flex justify-between" style={{ backgroundColor: "var(--panel-bg)" }}>
+      <span style={{ color: "var(--text-secondary)" }}>{label}</span>
+      <span className="font-bold" style={{ color: "var(--accent-yellow)" }}>{value}</span>
+    </div>
+  );
+}
