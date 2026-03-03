@@ -4,7 +4,7 @@ import type { SegmentSquad } from "../../hooks/useGameState";
 import {
   PixelSword, PixelBase, PixelBastion,
   PixelUnit, PixelPepe, PixelShib,
-  PixelWeather, PixelCoin, PixelSwordsman,
+  PixelWeather, PixelSwordsman,
 } from "./PixelSprites";
 
 interface LaneData {

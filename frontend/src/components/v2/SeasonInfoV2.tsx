@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { ADDRESSES, ERC20_ABI, TREASURY_ABI } from "../../config/contracts";
 import type { TreasuryBreakdown } from "../../hooks/useGameState";
-import { SEASON_DURATION, formatTimeRemaining, formatUSDC } from "../../lib/constants";
+import { SEASON_DURATION, formatUSDC } from "../../lib/constants";
 import { PixelTrophy, PixelCoin, PixelBastion } from "./PixelSprites";
 
 interface SeasonInfoV2Props {
